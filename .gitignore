@@ -1,0 +1,35 @@
+# Datasets (Extremamente Pesados)
+data/
+data_kaggle/
+*.zip
+*.rar
+*.tar.gz
+
+# Python & Ambiente Virtual
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# IDEs & Editores
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Modelos Salvos (Opcional - Evita poluir o Git, mas pode ser removido se quiser versionar pesos pequenos)
+*.pth
+*.pkl
+*.h5
+
+# Credenciais e Arquivos Pessoais
+access_token
+kaggle.json
+.kaggle/
