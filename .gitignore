@@ -5,6 +5,10 @@ data_kaggle/
 *.rar
 *.tar.gz
 
+# Cache de pixels e predições (arquivos grandes gerados automaticamente)
+*.npy
+log_*.txt
+
 # Python & Ambiente Virtual
 venv/
 .venv/

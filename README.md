@@ -4,7 +4,7 @@ Este repositório contém o código-fonte desenvolvido para o Trabalho de Conclu
 
 ---
 
-## 📌 Arquitetura do Projeto
+## Arquitetura do Projeto
 
 O pipeline preditivo é composto por duas abordagens principais:
 1. **Modelos Tabulares (Estatísticos e Baseados em Árvore):** Utilizam um conjunto de features geométricas extraídas previamente (ex.: área e proporção da Bounding Box). Implementou-se Regressão Linear Clássica e XGBoost com otimização via GridSearch.
@@ -14,7 +14,7 @@ Todas as falhas e depreciações do código original foram rigorosamente revisad
 
 ---
 
-## 🚀 Guia de Configuração e Execução
+## Guia de Configuração e Execução
 
 ### 1. Configuração do Ambiente Virtual
 Recomenda-se a utilização de uma versão atualizada do Python (3.9+). Execute os comandos abaixo para inicializar o ambiente de dependências:
@@ -47,9 +47,9 @@ A ordem de execução padrão é:
 
 ---
 
-## 🏗 Descritivo dos Módulos (Scripts)
+## Descritivo dos Módulos (Scripts)
 
-| Módulo/Arquivo | Descrição Técnica e Funções Implementadas |
+| Módulo/Arquivo | Descrição Técnica e Funções |
 | :--- | :--- |
 | `dataset_features_completo.csv` | *Dataset* tabular consolidado com variáveis geométricas pré-computadas de cada imagem. |
 | `train_linear_regression.py` | Baseline linear preditivo. Usado para ilustrar as limitações da regressão plana em inferências volumétricas. |
@@ -61,7 +61,7 @@ A ordem de execução padrão é:
 
 ---
 
-## 📊 Síntese dos Resultados Recentes
+## Síntese dos Resultados Recentes
 
 | Modelo | MAE ($kg$) | $R^2$ | Considerações Analíticas |
 | :--- | :--- | :--- | :--- |
@@ -71,7 +71,7 @@ A ordem de execução padrão é:
 
 ---
 
-## 📢 Notas aos Desenvolvedores do Grupo
+## Notas aos Desenvolvedores do Grupo
 
 Para a manutenção correta da integridade deste repositório, favor atentar-se aos seguintes pontos arquiteturais que foram corrigidos nas últimas atualizações:
 

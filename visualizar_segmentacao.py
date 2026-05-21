@@ -21,6 +21,8 @@ import kagglehub
 # ─────────────────────────────────────────────────────────────────────────────
 AMOSTRAS_POR_LOTE = 3   # quantas imagens mostrar por lote
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
+GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
+os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
 print("\n" + "="*60)
 print("  TCC FEI — Visualização de Segmentação por Lote")
@@ -155,7 +157,7 @@ for lote_nome, lista in amostras.items():
         row_idx += 1
 
 plt.tight_layout(rect=[0.08, 0, 1, 0.99])
-out_path = os.path.join(SAVE_DIR, "visualizacao_segmentacao.png")
+out_path = os.path.join(GRAFICOS_DIR, "visualizacao_segmentacao.png")
 plt.savefig(out_path, dpi=120, facecolor=fig.get_facecolor())
 plt.close()
 

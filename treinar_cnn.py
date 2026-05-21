@@ -1,7 +1,3 @@
-"""
-TCC FEI — CNN Baseline (sem segmentação) para Estimativa de Peso Bovino
-Arquitetura: ResNet18 pré-treinada com regressão de saída única
-"""
 
 import os
 import re
@@ -26,22 +22,19 @@ from torchvision import models, transforms
 from torch.optim import Adam
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    mean_absolute_error, mean_squared_error, r2_score,
-    accuracy_score, precision_score, recall_score, f1_score,
-    classification_report
-)
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
-SEED         = 42
-IMG_SIZE     = 224
-BATCH_SIZE   = 32
-NUM_EPOCHS   = 15
+SEED          = 42
+IMG_SIZE      = 224
+BATCH_SIZE    = 32
+NUM_EPOCHS    = 15
 LEARNING_RATE = 1e-4
-WEIGHT_MIN   = 50.0
-WEIGHT_MAX   = 1000.0
+WEIGHT_MAX    = 250.0   # Dataset filtrado: apenas leves (<250kg)
+# Fração do dataset a usar (1.0 = tudo; 0.1 para teste rápido)
+SAMPLE_FRAC   = 1.0
 
 torch.manual_seed(SEED)
 np.random.seed(SEED)
@@ -53,6 +46,8 @@ print(f"{'='*60}")
 print(f"  Dispositivo : {DEVICE}" + (f" ({torch.cuda.get_device_name(0)})" if torch.cuda.is_available() else ""))
 print(f"  Épocas      : {NUM_EPOCHS}")
 print(f"  Batch size  : {BATCH_SIZE}")
+print(f"  SAMPLE_FRAC : {SAMPLE_FRAC}")
+print(f"  Peso máx    : <{WEIGHT_MAX:.0f} kg (somente leves)")
 print(f"{'='*60}\n")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -67,53 +62,51 @@ dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detect
 # Resolver o caminho completo do Pixel
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
 
-pastas_lote = {
-    "B2": os.path.join(base_dir, "B2", "Side"),
-    "B3": os.path.join(base_dir, "B3"),
-    "B4": os.path.join(base_dir, "B4", "Side"),
-}
-
 def extrair_peso(filename, caminho):
     nome = filename.replace("___fuse.png", "").replace(".jpg", "")
     partes = nome.split("_")
     try:
         indice = 3 if "B4" in caminho or "b4" in caminho else 2
         val = float(partes[indice])
-        if 50 <= val <= 1000:
+        if 50 <= val < WEIGHT_MAX:
             return val
     except:
         pass
     return None
 
 records = []
-print("      Escaneando todos os subdiretórios recursivamente...")
+print("      Escaneando todos os subdiretórios recursivamente (sem B3, só leves)...")
 for root, dirs, files in os.walk(base_dir):
     if os.path.basename(root) == "images":
         pasta_imgs = root
         pasta_masks = os.path.join(os.path.dirname(root), "annotations")
-        
+
         if not os.path.exists(pasta_masks):
             continue
-            
+
         rel_path = os.path.relpath(root, base_dir)
         partes_caminho = rel_path.split(os.sep)
         lote = partes_caminho[0]
-        
-        for img_file in os.listdir(pasta_imgs):
+
+        # Ignorar lote B3 (dados clonados)
+        if lote == "B3":
+            continue
+
+        for img_file in sorted(os.listdir(pasta_imgs)):
             if not img_file.endswith(".jpg"):
                 continue
-                
+
             peso = extrair_peso(img_file, rel_path)
             if peso is None:
                 continue
-                
+
             img_path = os.path.join(pasta_imgs, img_file)
             mask_file = img_file + "___fuse.png"
             mask_path = os.path.join(pasta_masks, mask_file)
-            
+
             if not os.path.exists(mask_path):
                 continue
-                
+
             records.append({
                 "image_path": img_path,
                 "weight": peso,
@@ -121,6 +114,8 @@ for root, dirs, files in os.walk(base_dir):
             })
 
 df = pd.DataFrame(records)
+# Remover duplicatas de caminho de imagem
+df = df.drop_duplicates(subset=["image_path"]).reset_index(drop=True)
 
 print(f"      Shape do dataset estruturado: {df.shape}")
 print(df.head(3))
@@ -135,11 +130,7 @@ print(f"      Coluna peso   : '{weight_col}'")
 df[weight_col] = pd.to_numeric(df[weight_col], errors="coerce")
 df = df.dropna(subset=[img_col, weight_col]).copy()
 
-# ── Filtro de Domínio ────────────────────────────────────────────────────────
-before = len(df)
-df = df[(df[weight_col] >= WEIGHT_MIN) & (df[weight_col] <= WEIGHT_MAX)].copy()
-df = df.reset_index(drop=True)
-print(f"\n      Registos após filtro de domínio [{WEIGHT_MIN}-{WEIGHT_MAX}kg]: {len(df)} (removidos: {before - len(df)})")
+print(f"\n      Registros após filtro (sem B3, leves <{WEIGHT_MAX:.0f}kg, sem duplicatas): {len(df)}")
 
 # ── Verificação Física das Máscaras ──────────────────────────────────────────
 print("\n[VERIFICAÇÃO DE MÁSCARAS]")
@@ -172,6 +163,12 @@ else:
 # 2. SPLIT 80/20
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[2/5] Dividindo dados (80% treino / 20% validação) ...")
+
+# SAMPLE_FRAC < 1.0 para testes rápidos (ex: SAMPLE_FRAC=0.1 usa 10% do dataset)
+if SAMPLE_FRAC < 1.0:
+    df = df.sample(frac=SAMPLE_FRAC, random_state=SEED).reset_index(drop=True)
+    print(f"      [SAMPLE_FRAC={SAMPLE_FRAC}] Usando {len(df)} amostras para teste rápido")
+
 train_df, val_df = train_test_split(df, test_size=0.2, random_state=SEED)
 train_df = train_df.reset_index(drop=True)
 val_df   = val_df.reset_index(drop=True)
@@ -186,7 +183,9 @@ IMAGENET_STD  = [0.229, 0.224, 0.225]
 train_transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.RandomHorizontalFlip(),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
+    transforms.RandomRotation(degrees=10),
+    transforms.RandomAffine(degrees=0, scale=(0.9, 1.1)),
+    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.15),
     transforms.ToTensor(),
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
@@ -269,9 +268,9 @@ train_dataset = CattleWeightDataset(train_df, img_col, weight_col, train_transfo
 val_dataset   = CattleWeightDataset(val_df,   img_col, weight_col, val_transform)
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
-                          num_workers=0, pin_memory=torch.cuda.is_available())
+                          num_workers=4, pin_memory=torch.cuda.is_available())
 val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False,
-                          num_workers=0, pin_memory=torch.cuda.is_available())
+                          num_workers=4, pin_memory=torch.cuda.is_available())
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. MODELO — ResNet18 com cabeça de regressão
@@ -292,7 +291,7 @@ in_features = model.fc.in_features
 model.fc = nn.Sequential(
     nn.Linear(in_features, 256),
     nn.ReLU(),
-    nn.Dropout(0.3),
+    nn.Dropout(0.5),
     nn.Linear(256, 1),
     nn.Sigmoid(),
 )
@@ -305,12 +304,14 @@ for name, param in model.named_parameters():
 model = model.to(DEVICE)
 print(f"      Parâmetros treináveis (fase 1 - só cabeça): {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
 
-criterion = nn.MSELoss()
-optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LEARNING_RATE)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode="min", factor=0.5, patience=3, verbose=True
+huber_delta = 50.0 / (Y_MAX - Y_MIN)  # delta normalizado para escala [0,1]
+criterion = nn.HuberLoss(delta=huber_delta)
+optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                 lr=LEARNING_RATE, weight_decay=1e-4)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer, T_max=NUM_EPOCHS, eta_min=1e-6
 )
-FINETUNE_EPOCH = 5   # a partir desta época, descongela o backbone
+FINETUNE_EPOCH = 3   # descongelar mais cedo para mais épocas de fine-tuning
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. LOOP DE TREINO
@@ -318,7 +319,13 @@ FINETUNE_EPOCH = 5   # a partir desta época, descongela o backbone
 print(f"\n[4/5] Iniciando treino por {NUM_EPOCHS} épocas ...")
 print(f"      Estratégia: Épocas 1-{FINETUNE_EPOCH-1} → só cabeça | Épocas {FINETUNE_EPOCH}+ → backbone descongelado\n")
 
+from utils_tcc import safe_path, salvar_json
+MODEL_PATH = safe_path(os.path.join(SAVE_DIR, "resnet18_gado_segmentado.pth"))
+print(f"      Modelo será salvo em: {os.path.basename(MODEL_PATH)}")
+
 history = {"train_loss": [], "val_loss": []}
+best_val_loss = float("inf")
+best_epoch    = 0
 
 for epoch in range(1, NUM_EPOCHS + 1):
     t0 = time.time()
@@ -356,21 +363,39 @@ for epoch in range(1, NUM_EPOCHS + 1):
             val_running += criterion(preds, w_norm).item() * imgs.size(0)
     val_loss = val_running / len(val_dataset)
 
-    scheduler.step(val_loss)
+    scheduler.step()
 
     history["train_loss"].append(train_loss)
     history["val_loss"].append(val_loss)
+
+    # Salva o melhor modelo (menor val loss)
+    marker = ""
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        best_epoch    = epoch
+        torch.save({
+            "model_state_dict": model.state_dict(),
+            "y_min": Y_MIN, "y_max": Y_MAX, "img_size": IMG_SIZE,
+        }, MODEL_PATH)
+        marker = "  ★ melhor val loss"
 
     elapsed = time.time() - t0
     print(f"  Época {epoch:02d}/{NUM_EPOCHS} | "
           f"Train Loss: {train_loss:.6f} | "
           f"Val Loss: {val_loss:.6f} | "
-          f"Tempo: {elapsed:.1f}s")
+          f"Tempo: {elapsed:.1f}s{marker}")
+
+print(f"\n  Melhor modelo: época {best_epoch} | Val Loss: {best_val_loss:.6f}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. MÉTRICAS DE AVALIAÇÃO
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[5/5] Calculando métricas no conjunto de validação ...")
+
+# Carregar o melhor modelo salvo (menor val loss)
+checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
+model.load_state_dict(checkpoint["model_state_dict"])
+print(f"      Usando pesos da época {best_epoch} (melhor val loss: {best_val_loss:.6f})")
 
 model.eval()
 all_preds, all_true = [], []
@@ -392,19 +417,7 @@ mae  = mean_absolute_error(y_true, y_pred)
 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
 r2   = r2_score(y_true, y_pred)
 
-# ── Classificação por Faixas Biológicas ─────────────────────────────────────
-def discretize(weights):
-    cats = np.where(weights < 250, 0, np.where(weights <= 450, 1, 2))
-    return cats
-
-y_true_cat = discretize(y_true)
-y_pred_cat = discretize(y_pred)
-
-class_names = ["Leve (<250kg)", "Médio (250-450kg)", "Pesado (>450kg)"]
-acc  = accuracy_score(y_true_cat, y_pred_cat)
-prec = precision_score(y_true_cat, y_pred_cat, average="weighted", zero_division=0)
-rec  = recall_score(y_true_cat, y_pred_cat, average="weighted", zero_division=0)
-f1   = f1_score(y_true_cat, y_pred_cat, average="weighted", zero_division=0)
+pearson_r = np.corrcoef(y_true, y_pred)[0, 1]
 
 # ── Relatório Final ──────────────────────────────────────────────────────────
 print(f"""
@@ -416,19 +429,9 @@ print(f"""
   │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
   │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
   │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
-
-  ┌─ MÉTRICAS DE CLASSIFICAÇÃO (3 Faixas Biológicas) ───────┐
-  │  Acurácia : {acc*100:>6.2f}%                                   │
-  │  Precisão : {prec*100:>6.2f}% (weighted)                        │
-  │  Recall   : {rec*100:>6.2f}% (weighted)                        │
-  │  F1-Score : {f1*100:>6.2f}% (weighted)                         │
+  │  Pearson r                     : {pearson_r:>8.4f}               │
   └──────────────────────────────────────────────────────────┘
 """)
-
-print("  Relatório de Classificação Detalhado:")
-print(classification_report(y_true_cat, y_pred_cat,
-                             labels=[0, 1, 2], target_names=class_names, zero_division=0))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. GERAÇÃO DOS GRÁFICOS
@@ -436,6 +439,8 @@ print(classification_report(y_true_cat, y_pred_cat,
 print("  Gerando gráficos ...\n")
 DPI = 150
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
+GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
+os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
 # ─── 7.1 Curva de Loss ───────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -451,7 +456,7 @@ ax.legend(fontsize=11)
 ax.grid(True, alpha=0.35)
 ax.set_xticks(list(epochs_range))
 plt.tight_layout()
-path_loss = os.path.join(SAVE_DIR, "cnn_curva_loss.png")
+path_loss = os.path.join(GRAFICOS_DIR, "cnn_curva_loss.png")
 fig.savefig(path_loss, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_curva_loss.png")
@@ -468,7 +473,7 @@ ax.set_ylabel("Peso Predito (kg)", fontsize=12)
 ax.legend(fontsize=11)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-path_scatter = os.path.join(SAVE_DIR, "cnn_grafico_dispersao_r2.png")
+path_scatter = os.path.join(GRAFICOS_DIR, "cnn_grafico_dispersao_r2.png")
 fig.savefig(path_scatter, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_grafico_dispersao_r2.png")
@@ -485,63 +490,65 @@ ax.set_ylabel("Frequência", fontsize=12)
 ax.legend(fontsize=11)
 ax.grid(True, alpha=0.3, axis="y")
 plt.tight_layout()
-path_hist = os.path.join(SAVE_DIR, "cnn_histograma_erros.png")
+path_hist = os.path.join(GRAFICOS_DIR, "cnn_histograma_erros.png")
 fig.savefig(path_hist, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_histograma_erros.png")
 
-# ─── 7.4 Violino + Boxplot do Erro Absoluto por Faixa ────────────────────────
-abs_errors = np.abs(errors)
-faixa_labels = np.array(class_names)
-faixas_true  = faixa_labels[y_true_cat]
-
-plot_df = pd.DataFrame({"Faixa": faixas_true, "Erro Absoluto (kg)": abs_errors})
-order = class_names
-
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.violinplot(data=plot_df, x="Faixa", y="Erro Absoluto (kg)", order=order,
-               inner=None, palette=["#3B82F6", "#F59E0B", "#EF4444"],
-               linewidth=1.2, ax=ax, alpha=0.7)
-sns.boxplot(data=plot_df, x="Faixa", y="Erro Absoluto (kg)", order=order,
-            width=0.15, flierprops=dict(marker="o", markerfacecolor="k", markersize=3),
-            boxprops=dict(facecolor="white", zorder=2), linewidth=1.5, ax=ax)
-ax.set_title("Erro Absoluto por Faixa de Peso (Violino + Boxplot)", fontsize=14,
+# ─── 7.4 Boxplot de Erros ────────────────────────────────────────────────────
+fig, ax = plt.subplots(figsize=(7, 6))
+ax.boxplot(errors, vert=True, patch_artist=True,
+           boxprops=dict(facecolor="#7C3AED", alpha=0.6),
+           medianprops=dict(color="black", linewidth=2),
+           flierprops=dict(marker="o", markerfacecolor="grey", markersize=3, alpha=0.5))
+ax.axhline(0, color="red", linestyle="--", linewidth=1.5, label="Erro = 0")
+ax.set_title("CNN — Distribuição dos Erros de Predição", fontsize=14,
              fontweight="bold", pad=12)
-ax.set_xlabel("Faixa de Peso Biológica", fontsize=12)
-ax.set_ylabel("Erro Absoluto (kg)", fontsize=12)
+ax.set_ylabel("Erro (Predito − Real) [kg]", fontsize=12)
+ax.set_xticks([1]); ax.set_xticklabels(["CNN (ResNet18)"])
+ax.legend(fontsize=11)
 ax.grid(True, alpha=0.3, axis="y")
 plt.tight_layout()
-path_violin = os.path.join(SAVE_DIR, "cnn_boxplot_violino_erros.png")
-fig.savefig(path_violin, dpi=DPI)
+path_box = os.path.join(GRAFICOS_DIR, "cnn_boxplot_erros.png")
+fig.savefig(path_box, dpi=DPI)
 plt.close(fig)
-print(f"  [OK] cnn_boxplot_violino_erros.png")
+print(f"  [OK] cnn_boxplot_erros.png")
+
+# ─── 7.5 Gráfico de Correlação Linear ────────────────────────────────────────
+pearson_r = np.corrcoef(y_true, y_pred)[0, 1]
+fig, ax = plt.subplots(figsize=(8, 7))
+ax.scatter(y_true, y_pred, alpha=0.4, s=18, color="#7C3AED", edgecolors="none", label="Amostras")
+coef_corr = np.polyfit(y_true, y_pred, 1)
+x_line = np.linspace(y_true.min(), y_true.max(), 100)
+ax.plot(x_line, np.polyval(coef_corr, x_line), color="#E74C3C", linewidth=2,
+        label=f"Tendência (r = {pearson_r:.4f})")
+ax.plot(x_line, x_line, "k--", linewidth=1.2, alpha=0.5, label="y = x (perfeito)")
+ax.set_title(f"CNN — Correlação Linear\nPearson r = {pearson_r:.4f}",
+             fontsize=13, fontweight="bold")
+ax.set_xlabel("Peso Real (kg)", fontsize=12)
+ax.set_ylabel("Peso Previsto (kg)", fontsize=12)
+ax.legend(fontsize=10)
+ax.grid(True, alpha=0.3)
+plt.tight_layout()
+path_corr = os.path.join(GRAFICOS_DIR, "cnn_correlacao_linear.png")
+fig.savefig(path_corr, dpi=DPI)
+plt.close(fig)
+print(f"  [OK] cnn_correlacao_linear.png")
 
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"\n{'='*60}")
-print(f"  Treino concluído. Ficheiros gerados em:")
-print(f"  {SAVE_DIR}")
+print(f"  Treino concluído. Gráficos em:")
+print(f"  {GRAFICOS_DIR}")
 print(f"{'='*60}\n")
 
-# ── Salvar resultados para comparação entre modelos ──────────────────────────
-import json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
-existing = {}
-if os.path.exists(RESULTS_PATH):
-    with open(RESULTS_PATH, "r") as f:
-        existing = json.load(f)
-
-existing["CNN (ResNet18)"] = {
-    "mae":          float(mae),
-    "rmse":         float(rmse),
-    "r2":           float(r2),
-    "accuracy":     float(acc),
-    "precision":    float(prec),
-    "recall":       float(rec),
-    "f1":           float(f1),
-    "train_history": history["train_loss"],
-    "val_history":   history["val_loss"],
-}
-with open(RESULTS_PATH, "w") as f:
-    json.dump(existing, f, indent=2)
+npy_path = safe_path(os.path.join(SAVE_DIR, "predictions_cnn.npy"))
+np.save(npy_path, np.array([y_true, y_pred]))
+salvar_json(RESULTS_PATH, "CNN (ResNet18)", {
+    "mae": float(mae), "rmse": float(rmse), "r2": float(r2), "pearson_r": float(pearson_r),
+    "train_history": history["train_loss"], "val_history": history["val_loss"],
+})
 print(f"  Resultados salvos em: resultados_modelos.json\n")
+print(f"  Modelo salvo em: {os.path.basename(MODEL_PATH)}  (época {best_epoch})")
+print(f"  (Use predizer_imagem.py para inferência em novas imagens)\n")
 

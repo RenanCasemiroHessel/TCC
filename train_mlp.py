@@ -1,6 +1,7 @@
 """
 TCC FEI — MLP (Multi-Layer Perceptron) para Estimativa de Peso Bovino
 Pipeline: Imagens segmentadas (fundo preto) achatadas em vetor de pixels (como MNIST)
+Dataset: apenas leves (<250 kg), sem B3, sem duplicatas
 """
 
 import os
@@ -20,19 +21,14 @@ import kagglehub
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import (
-    mean_absolute_error, mean_squared_error, r2_score,
-    accuracy_score, precision_score, recall_score, f1_score,
-    classification_report
-)
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 SEED       = 42
 IMG_SIZE   = 64           # 64x64 pixels (como MNIST 28x28, mas maior)
-WEIGHT_MIN = 50.0
-WEIGHT_MAX = 1000.0
+WEIGHT_MAX = 250.0        # Dataset filtrado: só leves
 
 np.random.seed(SEED)
 
@@ -41,20 +37,15 @@ print(f"  TCC FEI — MLP para Estimativa de Peso Bovino")
 print(f"{'='*60}")
 print(f"  Entrada  : Imagens segmentadas {IMG_SIZE}x{IMG_SIZE} (achatadas)")
 print(f"  Modelo   : MLPRegressor (sklearn)")
+print(f"  Dataset  : apenas leves (<{WEIGHT_MAX:.0f}kg), sem B3")
 print(f"{'='*60}\n")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1. CARREGAR DATASET (mesma estrutura do treinar_cnn.py)
+# 1. CARREGAR DATASET (via kagglehub, filtrado: sem B3, só leves)
 # ─────────────────────────────────────────────────────────────────────────────
 print("[1/5] Carregando dataset via kagglehub ...")
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
-
-pastas_lote = {
-    "B2": os.path.join(base_dir, "B2", "Side"),
-    "B3": os.path.join(base_dir, "B3"),
-    "B4": os.path.join(base_dir, "B4", "Side"),
-}
 
 def extrair_peso(filename, caminho):
     nome = filename.replace(".jpg", "")
@@ -62,42 +53,46 @@ def extrair_peso(filename, caminho):
     try:
         indice = 3 if "B4" in caminho or "b4" in caminho else 2
         val = float(partes[indice])
-        if WEIGHT_MIN <= val <= WEIGHT_MAX:
+        if 50 <= val < WEIGHT_MAX:
             return val
     except Exception:
         pass
     return None
 
 records = []
-print("      Escaneando todos os subdiretórios recursivamente...")
+print("      Escaneando todos os subdiretórios recursivamente (sem B3, só leves)...")
 for root, dirs, files in os.walk(base_dir):
     if os.path.basename(root) == "images":
         pasta_imgs = root
         pasta_masks = os.path.join(os.path.dirname(root), "annotations")
-        
+
         if not os.path.exists(pasta_masks):
             continue
-            
+
         rel_path = os.path.relpath(root, base_dir)
         partes_caminho = rel_path.split(os.sep)
         lote = partes_caminho[0]
-        
-        # B2 usa máscara verde ([0, 255, 0, 255]), os demais (B3, B4) usam magenta
+
+        # Ignorar lote B3 (dados clonados)
+        if lote == "B3":
+            continue
+
+        # B2 usa máscara verde; B4 usa magenta
         cor_alvo = np.array([0, 255, 0, 255]) if "B2" in lote else np.array([255, 30, 249, 255])
-        
-        for img_file in os.listdir(pasta_imgs):
+
+        for img_file in sorted(os.listdir(pasta_imgs)):
             if not img_file.endswith(".jpg"):
                 continue
-                
+
             peso = extrair_peso(img_file, rel_path)
             if peso is None:
                 continue
-                
+
             img_path  = os.path.join(pasta_imgs, img_file)
             mask_path = os.path.join(pasta_masks, img_file + "___fuse.png")
             if not os.path.exists(mask_path):
                 continue
-                
+
             records.append({
                 "image_path": img_path,
                 "mask_path":  mask_path,
@@ -107,22 +102,27 @@ for root, dirs, files in os.walk(base_dir):
             })
 
 df = pd.DataFrame(records)
-print(f"      Total de amostras localizadas recursivamente: {len(df)}")
+
+# Remover duplicatas (mesma imagem com mesmo peso)
+df = df.drop_duplicates(subset=["image_path"]).reset_index(drop=True)
+print(f"      Total de amostras (sem B3, só leves, sem duplicatas): {len(df)}")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. EXTRAIR PIXELS DAS IMAGENS SEGMENTADAS (com cache de arquivo para ultra-velocidade!)
+# 2. EXTRAIR PIXELS DAS IMAGENS SEGMENTADAS (com cache por nome de filtro)
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[2/5] Extraindo pixels das imagens segmentadas...")
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
-CACHE_X = os.path.join(SAVE_DIR, f"mlp_cache_X_{IMG_SIZE}.npy")
-CACHE_Y = os.path.join(SAVE_DIR, f"mlp_cache_y_{IMG_SIZE}.npy")
+GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
+os.makedirs(GRAFICOS_DIR, exist_ok=True)
+CACHE_X = os.path.join(SAVE_DIR, f"mlp_cache_X_{IMG_SIZE}_leves.npy")
+CACHE_Y = os.path.join(SAVE_DIR, f"mlp_cache_y_{IMG_SIZE}_leves.npy")
 
 if os.path.exists(CACHE_X) and os.path.exists(CACHE_Y):
     print("      [CACHE] Carregando pixels pré-processados salvos anteriormente...")
     X = np.load(CACHE_X)
     y = np.load(CACHE_Y)
 else:
-    print("      [Aviso] Cache não encontrada. Processando imagens pela primeira vez (isso pode demorar)...")
+    print("      [Aviso] Cache não encontrada. Processando imagens pela primeira vez (pode demorar)...")
     X_pixels = []
     y_labels = []
 
@@ -141,11 +141,9 @@ else:
             masked_img           = img_np.copy()
             masked_img[~bovino_mask] = 0
 
-            # Redimensionar para IMG_SIZE x IMG_SIZE (como MNIST → 28x28)
             img_small = np.array(
                 Image.fromarray(masked_img).resize((IMG_SIZE, IMG_SIZE), Image.LANCZOS)
             )
-            # Achatar (flatten) — igual ao MNIST mas com 64*64*3 = 12288 features
             X_pixels.append(img_small.flatten().astype(np.float32) / 255.0)
             y_labels.append(row["weight"])
 
@@ -161,7 +159,7 @@ else:
 print(f"      Shape X (pixels): {X.shape}  |  Shape y: {y.shape}")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. SPLIT 80/20 & PCA (Redução de Dimensionalidade)
+# 3. SPLIT 80/20 & PCA
 # ─────────────────────────────────────────────────────────────────────────────
 print("\n[3/5] Dividindo dados (80% treino / 20% validação) ...")
 X_train, X_test, y_train, y_test = train_test_split(
@@ -169,12 +167,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 print(f"      Treino: {len(X_train)} | Validação: {len(X_test)}")
 
-# Normalização (Z-score, igual ao MNIST normalizado)
 scaler  = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test  = scaler.transform(X_test)
 
-# PCA para evitar Overfitting e acelerar o treino em 100x!
 print("      Aplicando PCA para extração de 128 componentes principais mais importantes...")
 from sklearn.decomposition import PCA
 pca = PCA(n_components=128, random_state=SEED)
@@ -202,6 +198,9 @@ mlp.fit(X_train, y_train)
 print(f"      Convergiu em {mlp.n_iter_} iterações")
 
 y_pred = mlp.predict(X_test)
+# Clipar predições ao range do dataset (MLP não tem restrição de saída)
+WEIGHT_MIN = 50.0
+y_pred = np.clip(y_pred, WEIGHT_MIN, WEIGHT_MAX)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. MÉTRICAS
@@ -210,20 +209,8 @@ mae  = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2   = r2_score(y_test, y_pred)
 
-# Classificação por faixas biológicas
-class_names = ["Leve (<250kg)", "Médio (250-450kg)", "Pesado (>450kg)"]
-def classify(w):
-    if w < 250:   return 0
-    if w <= 450:  return 1
-    return 2
-
-y_true_cat = [classify(v) for v in y_test]
-y_pred_cat = [classify(v) for v in y_pred]
-
-acc  = accuracy_score(y_true_cat, y_pred_cat)
-prec = precision_score(y_true_cat, y_pred_cat, average="weighted", zero_division=0)
-rec  = recall_score(y_true_cat, y_pred_cat, average="weighted", zero_division=0)
-f1   = f1_score(y_true_cat, y_pred_cat, average="weighted", zero_division=0)
+# Correlação de Pearson entre real e previsto
+pearson_r = np.corrcoef(y_test, y_pred)[0, 1]
 
 print(f"""
 {'='*60}
@@ -234,29 +221,18 @@ print(f"""
   │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
   │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
   │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
-
-  ┌─ MÉTRICAS DE CLASSIFICAÇÃO (3 Faixas Biológicas) ───────┐
-  │  Acurácia : {acc*100:>6.2f}%                                   │
-  │  Precisão : {prec*100:>6.2f}% (weighted)                        │
-  │  Recall   : {rec*100:>6.2f}% (weighted)                        │
-  │  F1-Score : {f1*100:>6.2f}% (weighted)                         │
+  │  Pearson r                     : {pearson_r:>8.4f}               │
   └──────────────────────────────────────────────────────────┘
 """)
-
-print("  Relatório de Classificação Detalhado:")
-print(classification_report(y_true_cat, y_pred_cat,
-                             labels=[0, 1, 2], target_names=class_names, zero_division=0))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. GRÁFICOS
 # ─────────────────────────────────────────────────────────────────────────────
 print("[5/5] Gerando gráficos ...\n")
-DPI      = 150
-SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
-errors   = y_pred - y_test
+DPI    = 150
+errors = y_pred - y_test
 
-# 6.1 Curva de Loss (loss_curve_ do MLPRegressor)
+# 6.1 Curva de Loss
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(mlp.loss_curve_, color="#4A90D9", linewidth=2, label="Loss Treino")
 if hasattr(mlp, "validation_scores_") and mlp.validation_scores_:
@@ -268,7 +244,7 @@ ax.set_ylabel("Loss (MSE)")
 ax.legend()
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_DIR, "mlp_curva_loss.png"), dpi=DPI)
+plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_curva_loss.png"), dpi=DPI)
 plt.close()
 print("    ✓ mlp_curva_loss.png")
 
@@ -282,7 +258,7 @@ ax.set_title(f"MLP — Dispersão Real vs Previsto  (R²={r2:.4f})", fontsize=13
 ax.set_xlabel("Peso Real (kg)"); ax.set_ylabel("Peso Previsto (kg)")
 ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_DIR, "mlp_grafico_dispersao_r2.png"), dpi=DPI)
+plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_grafico_dispersao_r2.png"), dpi=DPI)
 plt.close()
 print("    ✓ mlp_grafico_dispersao_r2.png")
 
@@ -294,45 +270,38 @@ ax.set_title("MLP — Histograma de Erros (Previsto − Real)", fontsize=13, fon
 ax.set_xlabel("Erro (kg)"); ax.set_ylabel("Frequência")
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_DIR, "mlp_histograma_erros.png"), dpi=DPI)
+plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_histograma_erros.png"), dpi=DPI)
 plt.close()
 print("    ✓ mlp_histograma_erros.png")
 
-# 6.4 Boxplot/Violino de Erros por Faixa
-df_err = pd.DataFrame({
-    "Erro": errors,
-    "Faixa": [class_names[c] for c in y_true_cat]
-})
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-sns.violinplot(data=df_err, x="Faixa", y="Erro", palette="Set2", ax=axes[0])
-axes[0].axhline(0, color="red", linestyle="--")
-axes[0].set_title("MLP — Violino de Erros por Faixa")
-axes[0].set_ylabel("Erro (kg)")
-sns.boxplot(data=df_err, x="Faixa", y="Erro", palette="Set2", ax=axes[1])
-axes[1].axhline(0, color="red", linestyle="--")
-axes[1].set_title("MLP — Boxplot de Erros por Faixa")
-axes[1].set_ylabel("Erro (kg)")
-plt.suptitle("MLP — Distribuição dos Erros por Faixa Biológica", fontsize=13, fontweight="bold")
+# 6.4 Gráfico de Correlação Linear
+fig, ax = plt.subplots(figsize=(8, 7))
+ax.scatter(y_test, y_pred, alpha=0.5, color="#4A90D9", edgecolors="white", linewidths=0.3, s=40, label="Amostras")
+coef_corr = np.polyfit(y_test, y_pred, 1)
+x_line = np.linspace(y_test.min(), y_test.max(), 100)
+ax.plot(x_line, np.polyval(coef_corr, x_line), color="#E74C3C", linewidth=2,
+        label=f"Tendência (r = {pearson_r:.4f})")
+ax.plot(x_line, x_line, "k--", linewidth=1.2, alpha=0.5, label="y = x (perfeito)")
+ax.set_title(f"MLP — Correlação Linear\nPearson r = {pearson_r:.4f}",
+             fontsize=13, fontweight="bold")
+ax.set_xlabel("Peso Real (kg)"); ax.set_ylabel("Peso Previsto (kg)")
+ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(os.path.join(SAVE_DIR, "mlp_boxplot_violino_erros.png"), dpi=DPI)
+plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_correlacao_linear.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_boxplot_violino_erros.png")
+print("    ✓ mlp_correlacao_linear.png")
 
 print(f"\n{'='*60}")
-print(f"  Gráficos gerados em: {SAVE_DIR}")
+print(f"  Gráficos gerados em: {GRAFICOS_DIR}")
 print(f"{'='*60}\n")
 
-import json
+# Salvar predições para boxplot comparativo em comparar_modelos.py
+from utils_tcc import safe_path, salvar_json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
-existing = {}
-if os.path.exists(RESULTS_PATH):
-    with open(RESULTS_PATH, "r") as f:
-        existing = json.load(f)
-existing["MLP (pixels)"] = {
-    "mae": float(mae), "rmse": float(rmse), "r2": float(r2),
-    "accuracy": float(acc), "precision": float(prec), "recall": float(rec), "f1": float(f1),
+npy_path = safe_path(os.path.join(SAVE_DIR, "predictions_mlp.npy"))
+np.save(npy_path, np.array([y_test, y_pred]))
+salvar_json(RESULTS_PATH, "MLP (pixels)", {
+    "mae": float(mae), "rmse": float(rmse), "r2": float(r2), "pearson_r": float(pearson_r),
     "train_history": mlp.loss_curve_, "val_history": [],
-}
-with open(RESULTS_PATH, "w") as f:
-    json.dump(existing, f, indent=2)
+})
 print("  Resultados salvos em: resultados_modelos.json\n")

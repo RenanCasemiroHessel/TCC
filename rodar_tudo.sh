@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# TCC FEI — Execução completa (do mais rápido para o mais lento)
+# TCC FEI — Execução completa (Single-View + Multi-View + Comparação)
 # Uso: bash rodar_tudo.sh
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -11,50 +11,64 @@ cd "$DIR"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║   TCC FEI — Execução Completa de Todos os Modelos       ║"
-echo "║   Ordem: Rápido → Lento                                  ║"
+echo "║   TCC FEI — Execução Completa (todos os modelos)         ║"
+echo "║   Dataset: sem B3, apenas leves (<250kg)                 ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
-# ── 0. Visualização da Segmentação ───────────────────────────────────────────
-echo "━━━ [0/6] Visualização das imagens segmentadas ━━━"
-$PYTHON visualizar_segmentacao.py
-echo "      → Abra 'visualizacao_segmentacao.png'!"
+# ── 0. Filtrar Dataset ────────────────────────────────────────────────────────
+echo "━━━ [0/9] Filtrando dataset ━━━"
+$PYTHON filtrar_dataset.py
 echo ""
 
-# ── 1. Regressão Linear (~1 min) ─────────────────────────────────────────────
-echo "━━━ [1/6] Regressão Linear  (~1 min) ━━━"
+# ── 1. Visualização ───────────────────────────────────────────────────────────
+echo "━━━ [1/9] Visualização das imagens segmentadas ━━━"
+$PYTHON visualizar_segmentacao.py
+echo ""
+
+# ── SINGLE-VIEW ───────────────────────────────────────────────────────────────
+echo "━━━ [2/9] Regressão Linear  (~1 min) ━━━"
 $PYTHON train_linear_regression.py
 echo ""
 
-# ── 2. XGBoost (~2 min) ──────────────────────────────────────────────────────
-echo "━━━ [2/6] XGBoost  (~2 min) ━━━"
+echo "━━━ [3/9] XGBoost  (~1 min) ━━━"
 $PYTHON train_xgboost.py
 echo ""
 
-# ── 3. XGBoost + GridSearch (~15 min) ────────────────────────────────────────
-echo "━━━ [3/6] XGBoost + GridSearch  (~15 min) ━━━"
-$PYTHON tune_xgboost.py
-echo ""
-
-# ── 4. MLP com pixels (~20 min) ──────────────────────────────────────────────
-echo "━━━ [4/6] MLP — Pixels achatados 64x64  (~20 min) ━━━"
+echo "━━━ [4/9] MLP pixels  (~20 min) ━━━"
 $PYTHON train_mlp.py
 echo ""
 
-# ── 5. CNN ResNet18 (~2-3h com 15 épocas na GPU) ─────────────────────────────
-echo "━━━ [5/6] CNN — ResNet18 + segmentação (GPU, ~2h) ━━━"
+echo "━━━ [5/9] CNN ResNet18 single-view  (~50 min) ━━━"
 $PYTHON treinar_cnn.py
 echo ""
 
-# ── 6. Comparação de todos os modelos ────────────────────────────────────────
-echo "━━━ [6/6] Comparando todos os modelos ━━━"
+# ── MULTI-VIEW ────────────────────────────────────────────────────────────────
+echo "━━━ [6/9] LR Multi-View  (~1 min) ━━━"
+$PYTHON train_lr_multiview.py
+echo ""
+
+echo "━━━ [7/9] XGBoost Multi-View  (~1 min) ━━━"
+$PYTHON train_xgboost_multiview.py
+echo ""
+
+echo "━━━ [8/9] MLP Multi-View  (~20 min) ━━━"
+$PYTHON train_mlp_multiview.py
+echo ""
+
+echo "━━━ [8/9] CNN Multi-View  (~50 min) ━━━"
+$PYTHON treinar_cnn_multiview.py
+echo ""
+
+# ── COMPARAÇÃO ────────────────────────────────────────────────────────────────
+echo "━━━ [9/9] Comparando todos os modelos ━━━"
 $PYTHON comparar_modelos.py
 echo ""
 
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║   Todos os modelos concluídos!                           ║"
+echo "║   Gráficos salvos em: graficos/                          ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
-echo "  Gráficos gerados:"
-ls *.png 2>/dev/null | sed 's/^/    ✓ /'
+echo "  Gráficos gerados em graficos/:"
+ls graficos/*.png 2>/dev/null | sed 's/^/    ✓ /' || echo "    (nenhum PNG encontrado)"
