@@ -1,5 +1,5 @@
 """
-TCC FEI — Regressão Linear (Ridge + Polinomial) para Estimativa de Peso Bovino
+Regressão Linear (Ridge + Polinomial) para Estimativa de Peso Bovino
 Entrada: Features extraídas das imagens segmentadas + engenharia de features
 Dataset: apenas leves (<250 kg), sem B3, sem duplicatas
 Modelo: Ridge com PolynomialFeatures(grau=2) para capturar relações não-lineares
@@ -14,6 +14,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import seaborn as sns
 
 from sklearn.linear_model import Ridge
@@ -21,29 +22,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
 SEED       = 42
 POLY_DEGREE = 2      # PolynomialFeatures — captura interações quadráticas
 RIDGE_ALPHA = 10.0   # Regularização Ridge — evita overfitting com muitas features
 np.random.seed(SEED)
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — Regressão Linear (Ridge + Polinomial)")
-print(f"{'='*60}")
+print(f"  Regressão Linear (Ridge + Polinomial)")
 print(f"  Entrada: Features das imagens segmentadas (CSV filtrado)")
 print(f"  Modelo : Ridge(alpha={RIDGE_ALPHA}) + PolynomialFeatures(degree={POLY_DEGREE})")
-print(f"{'='*60}\n")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 1. CARREGAR CSV DE FEATURES (já filtrado: sem B3, só leves <250kg)
-# ─────────────────────────────────────────────────────────────────────────────
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
 CSV_PATH = os.path.join(SAVE_DIR, "dataset_features_leves.csv")
-print("[1/5] Carregando dataset de features ...")
+print("Carregando dataset de features ...")
 
 if not os.path.exists(CSV_PATH):
     print(f"  ERRO: Arquivo não encontrado: {CSV_PATH}")
@@ -51,9 +45,6 @@ if not os.path.exists(CSV_PATH):
     exit(1)
 
 df = pd.read_csv(CSV_PATH)
-print(f"      Registros carregados: {len(df)}")
-print(f"      Lotes: {df['lote'].value_counts().to_dict()}")
-print(f"      Peso: min={df['peso_kg'].min():.0f}kg, max={df['peso_kg'].max():.0f}kg")
 
 # One-Hot Encoding de sexo e vista
 df_enc = pd.get_dummies(df, columns=["sexo", "vista"], drop_first=True)
@@ -61,9 +52,7 @@ for col in ["sexo_M", "vista_side"]:
     if col in df_enc.columns:
         df_enc[col] = df_enc[col].astype(float)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # ENGENHARIA DE FEATURES (mesma do XGBoost — relações biológicas e físicas)
-# ─────────────────────────────────────────────────────────────────────────────
 df_enc["bbox_area"]          = df_enc["altura_bbox"] * df_enc["largura_bbox"]
 df_enc["fill_ratio"]         = df_enc["area"] / (df_enc["bbox_area"] + 1e-8)
 df_enc["volume_approx"]      = df_enc["area"] ** 1.5   # peso ~ volume ~ área^1.5
@@ -77,16 +66,12 @@ for col in ["sexo_M", "vista_side"]:
 
 X_base = df_enc[features_base].values
 y      = df_enc["peso_kg"].values
-print(f"      Features base: {features_base}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 2. SPLIT 80/20
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[2/5] Dividindo dados (80% treino / 20% validação) ...")
+print("\nDividindo dados (80% treino / 20% validação) ...")
 X_train_base, X_test_base, y_train, y_test = train_test_split(
     X_base, y, test_size=0.2, random_state=SEED
 )
-print(f"      Treino: {len(X_train_base)} | Validação: {len(X_test_base)}")
 
 # Normalização antes de expandir polinomialmente (evita escala explosiva)
 scaler       = StandardScaler()
@@ -97,21 +82,16 @@ X_test_sc    = scaler.transform(X_test_base)
 poly         = PolynomialFeatures(degree=POLY_DEGREE, include_bias=False)
 X_train      = poly.fit_transform(X_train_sc)
 X_test       = poly.transform(X_test_sc)
-print(f"      Features após PolynomialFeatures(degree={POLY_DEGREE}): {X_train.shape[1]}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 3. TREINO (Ridge)
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/5] Treinando Ridge Regression ...")
+print("\nTreinando Ridge Regression ...")
 model = Ridge(alpha=RIDGE_ALPHA)
 model.fit(X_train, y_train)
 
 y_pred_train = model.predict(X_train)
 y_pred       = model.predict(X_test)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 4. MÉTRICAS
-# ─────────────────────────────────────────────────────────────────────────────
 mae_train = mean_absolute_error(y_train, y_pred_train)
 mae       = mean_absolute_error(y_test, y_pred)
 rmse      = np.sqrt(mean_squared_error(y_test, y_pred))
@@ -125,19 +105,16 @@ print(f"""
   RELATÓRIO FINAL — Regressão Linear (Ridge + Polinomial)
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  Treino                   : {mae_train:>8.2f} kg           │
-  │  MAE  Validação                : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  Treino  : {mae_train:>8.2f} kg")
+    print(f"MAE  Validação  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 5. GRÁFICOS
-# ─────────────────────────────────────────────────────────────────────────────
-print("[4/5] Gerando gráficos ...\n")
+print("Gerando gráficos ...\n")
 DPI    = 150
 errors = y_pred - y_test
 
@@ -154,7 +131,7 @@ ax.grid(True, alpha=0.3, axis="y")
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_curva_loss.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_curva_loss.png  (MAE treino vs validação)")
+print("    [OK] lr_curva_loss.png  (MAE treino vs validação)")
 
 # 5.2 Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -169,7 +146,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_grafico_dispersao_r2.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_grafico_dispersao_r2.png")
+print("    [OK] lr_grafico_dispersao_r2.png")
 
 # 5.3 Histograma de Erros
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -184,7 +161,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_histograma_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_histograma_erros.png")
+print("    [OK] lr_histograma_erros.png")
 
 # 5.4 Gráfico de Correlação Linear (Real vs Previsto com linha de tendência)
 fig, ax = plt.subplots(figsize=(8, 7))
@@ -202,11 +179,9 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_correlacao_linear.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_correlacao_linear.png")
+print("    [OK] lr_correlacao_linear.png")
 
-print(f"\n{'='*60}")
 print(f"  Gráficos gerados em: {GRAFICOS_DIR}")
-print(f"{'='*60}\n")
 
 from utils_tcc import safe_path, salvar_json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")

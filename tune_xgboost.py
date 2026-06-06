@@ -1,5 +1,5 @@
 """
-TCC FEI — XGBoost com Tuning (GridSearch) para Estimativa de Peso Bovino
+XGBoost com Tuning (GridSearch) para Estimativa de Peso Bovino
 Entrada: Features extraídas das imagens segmentadas (área, bbox, etc.)
 """
 
@@ -31,17 +31,14 @@ WEIGHT_MAX = 1000.0
 
 np.random.seed(SEED)
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — XGBoost + GridSearch para Estimativa de Peso Bovino")
-print(f"{'='*60}")
+print(f"  XGBoost + GridSearch para Estimativa de Peso Bovino")
 print(f"  Entrada: Features das imagens segmentadas (CSV)")
-print(f"{'='*60}\n")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. CARREGAR CSV DE FEATURES
 # ─────────────────────────────────────────────────────────────────────────────
 CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_features_completo.csv")
-print("[1/5] Carregando dataset de features ...")
+print("Carregando dataset de features ...")
 
 if not os.path.exists(CSV_PATH):
     print(f"  ERRO: Arquivo não encontrado: {CSV_PATH}")
@@ -53,7 +50,6 @@ df = pd.read_csv(CSV_PATH)
 before = len(df)
 df = df[(df["peso_kg"] >= WEIGHT_MIN) & (df["peso_kg"] <= WEIGHT_MAX)].copy()
 df = df.reset_index(drop=True)
-print(f"      Registros após filtro [{WEIGHT_MIN}-{WEIGHT_MAX}kg]: {len(df)}  (removidos: {before - len(df)})")
 
 df_enc = pd.get_dummies(df, columns=["sexo", "vista"], drop_first=True)
 for col in ["sexo_M", "vista_side"]:
@@ -75,21 +71,19 @@ for col in ["sexo_M", "vista_side"]:
 
 X = df_enc[features].values
 y = df_enc["peso_kg"].values
-print(f"      Features originais + engenharia: {features}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. SPLIT 80/20
 # ─────────────────────────────────────────────────────────────────────────────
-print("\n[2/5] Dividindo dados (80% treino / 20% validação) ...")
+print("\nDividindo dados (80% treino / 20% validação) ...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=SEED
 )
-print(f"      Treino: {len(X_train)} | Validação: {len(X_test)}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. GRIDSEARCH
 # ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/5] Iniciando GridSearch de hiperparâmetros do XGBoost ...")
+print("\nIniciando GridSearch de hiperparâmetros do XGBoost ...")
 
 param_grid = {
     "n_estimators":    [100, 200, 300],
@@ -161,18 +155,16 @@ print(f"""
   RELATÓRIO FINAL — XGBoost Otimizado (GridSearch)
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  (Erro Absoluto Médio)  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
 
-  ┌─ MÉTRICAS DE CLASSIFICAÇÃO (3 Faixas Biológicas) ───────┐
-  │  Acurácia : {acc*100:>6.2f}%                                   │
-  │  Precisão : {prec*100:>6.2f}% (weighted)                        │
-  │  Recall   : {rec*100:>6.2f}% (weighted)                        │
-  │  F1-Score : {f1*100:>6.2f}% (weighted)                         │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"Acurácia : {acc*100:>6.2f}%")
+    print(f"Precisão : {prec*100:>6.2f}% (weighted)")
+    print(f"Recall  : {rec*100:>6.2f}% (weighted)")
+    print(f"F1-Score : {f1*100:>6.2f}% (weighted)")
 """)
 
 print("  Relatório de Classificação Detalhado:")
@@ -182,7 +174,7 @@ print(classification_report(y_true_cat, y_pred_cat,
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. GRÁFICOS
 # ─────────────────────────────────────────────────────────────────────────────
-print("[4/5] Gerando gráficos ...\n")
+print("Gerando gráficos ...\n")
 DPI      = 150
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 errors   = y_pred - y_test
@@ -197,7 +189,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_curva_loss.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_tune_curva_loss.png")
+print("    [OK] xgboost_tune_curva_loss.png")
 
 # 5.2 Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -212,7 +204,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_grafico_dispersao_r2.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_tune_grafico_dispersao_r2.png")
+print("    [OK] xgboost_tune_grafico_dispersao_r2.png")
 
 # 5.3 Histograma de Erros
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -224,7 +216,7 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_histograma_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_tune_histograma_erros.png")
+print("    [OK] xgboost_tune_histograma_erros.png")
 
 # 5.4 Boxplot/Violino de Erros por Faixa
 df_err = pd.DataFrame({
@@ -245,11 +237,9 @@ plt.suptitle("XGBoost Otimizado — Distribuição dos Erros por Faixa Biológic
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_boxplot_violino_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_tune_boxplot_violino_erros.png")
+print("    [OK] xgboost_tune_boxplot_violino_erros.png")
 
-print(f"\n{'='*60}")
 print(f"  Gráficos gerados em: {SAVE_DIR}")
-print(f"{'='*60}\n")
 
 import json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")

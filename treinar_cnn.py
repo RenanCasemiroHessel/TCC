@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import seaborn as sns
 
 from PIL import Image, UnidentifiedImageError
@@ -24,36 +25,31 @@ from torch.optim import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
 SEED          = 42
 IMG_SIZE      = 224
 BATCH_SIZE    = 32
-NUM_EPOCHS    = 15
+NUM_EPOCHS    = 30
 LEARNING_RATE = 1e-4
-WEIGHT_MAX    = 250.0   # Dataset filtrado: apenas leves (<250kg)
-# Fração do dataset a usar (1.0 = tudo; 0.1 para teste rápido)
+WEIGHT_MAX    = 250.0   
 SAMPLE_FRAC   = 1.0
+SAVE_DIR      = os.path.dirname(os.path.abspath(__file__))
+GRAFICOS_DIR  = os.path.join(SAVE_DIR, "graficos")
+os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
 torch.manual_seed(SEED)
 np.random.seed(SEED)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"\n{'='*60}")
-print(f"  TCC FEI — CNN Baseline para Estimativa de Peso Bovino")
-print(f"{'='*60}")
+print(f"  CNN Baseline para Estimativa de Peso Bovino")
 print(f"  Dispositivo : {DEVICE}" + (f" ({torch.cuda.get_device_name(0)})" if torch.cuda.is_available() else ""))
 print(f"  Épocas      : {NUM_EPOCHS}")
 print(f"  Batch size  : {BATCH_SIZE}")
 print(f"  SAMPLE_FRAC : {SAMPLE_FRAC}")
 print(f"  Peso máx    : <{WEIGHT_MAX:.0f} kg (somente leves)")
-print(f"{'='*60}\n")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 1. DOWNLOAD E CURADORIA DOS DADOS
-# ─────────────────────────────────────────────────────────────────────────────
-print("[1/5] Carregando dataset via kagglehub ...")
+print("Carregando dataset via kagglehub ...")
 import kagglehub
 
 # Obter o caminho da pasta raiz do dataset pelo kagglehub
@@ -75,7 +71,6 @@ def extrair_peso(filename, caminho):
     return None
 
 records = []
-print("      Escaneando todos os subdiretórios recursivamente (sem B3, só leves)...")
 for root, dirs, files in os.walk(base_dir):
     if os.path.basename(root) == "images":
         pasta_imgs = root
@@ -124,7 +119,6 @@ img_col    = "image_path"
 weight_col = "weight"
 
 print(f"\n      Coluna imagem : '{img_col}'")
-print(f"      Coluna peso   : '{weight_col}'")
 
 # Garantir tipos corretos
 df[weight_col] = pd.to_numeric(df[weight_col], errors="coerce")
@@ -149,34 +143,23 @@ for idx, row in df.head(100).iterrows():
             if len(sample_masks) < 3:
                 sample_masks.append((img_path, mask_path))
 
-print(f"      Máscaras encontradas na amostra inicial (100 linhas): {masks_found}")
 if len(sample_masks) > 0:
-    print("      [SUCESSO] Máscaras de segmentação localizadas fisicamente!")
-    print("      Estrutura de caminhos de exemplo:")
-    for img_p, m_p in sample_masks:
-        print(f"        - Imagem:  {img_p}")
-        print(f"        - Máscara: {m_p}")
+    print(f"Máscaras encontradas: {masks_found}/100")
 else:
-    print("      [AVISO] Nenhuma máscara foi encontrada na amostra (ainda baixando/extraindo).")
+    print("Aviso: nenhuma máscara encontrada na amostra.")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 2. SPLIT 80/20
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[2/5] Dividindo dados (80% treino / 20% validação) ...")
+print("\nDividindo dados (80% treino / 20% validação) ...")
 
 # SAMPLE_FRAC < 1.0 para testes rápidos (ex: SAMPLE_FRAC=0.1 usa 10% do dataset)
 if SAMPLE_FRAC < 1.0:
     df = df.sample(frac=SAMPLE_FRAC, random_state=SEED).reset_index(drop=True)
-    print(f"      [SAMPLE_FRAC={SAMPLE_FRAC}] Usando {len(df)} amostras para teste rápido")
 
 train_df, val_df = train_test_split(df, test_size=0.2, random_state=SEED)
 train_df = train_df.reset_index(drop=True)
 val_df   = val_df.reset_index(drop=True)
-print(f"      Treino: {len(train_df)} | Validação: {len(val_df)}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 3. DATASET E DATALOADERS
-# ─────────────────────────────────────────────────────────────────────────────
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
@@ -195,7 +178,6 @@ val_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
-
 
 class CattleWeightDataset(Dataset):
     def __init__(self, dataframe, img_col, weight_col, transform=None):
@@ -243,7 +225,6 @@ class CattleWeightDataset(Dataset):
                     alpha = np.full((*mask_np.shape[:2], 1), 255, dtype=np.uint8)
                     mask_np = np.concatenate([mask_np, alpha], axis=-1)
                 
-                # Criar máscara binária do boi
                 bovino_mask = np.all(mask_np == cor_alvo, axis=-1)
                 
                 # Aplicar fundo preto (isolar boi)
@@ -263,7 +244,6 @@ class CattleWeightDataset(Dataset):
             
         return image_pil, torch.tensor(weight, dtype=torch.float32)
 
-
 train_dataset = CattleWeightDataset(train_df, img_col, weight_col, train_transform)
 val_dataset   = CattleWeightDataset(val_df,   img_col, weight_col, val_transform)
 
@@ -272,17 +252,14 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
 val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False,
                           num_workers=4, pin_memory=torch.cuda.is_available())
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 4. MODELO — ResNet18 com cabeça de regressão
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/5] Construindo modelo (ResNet18 pré-treinado) ...")
+print("\nConstruindo modelo (ResNet18 pré-treinado) ...")
 
 # ── Normalização do alvo (crítico para convergência da regressão) ─────────────
 # Normaliza pesos para [0,1] durante treino e escala de volta nas métricas
 train_weights = train_df[weight_col].values
 Y_MIN = float(train_weights.min())
 Y_MAX = float(train_weights.max())
-print(f"      Normalização do alvo: [{Y_MIN:.0f}, {Y_MAX:.0f}] kg → [0, 1]")
 
 model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 in_features = model.fc.in_features
@@ -302,7 +279,6 @@ for name, param in model.named_parameters():
         param.requires_grad = False
 
 model = model.to(DEVICE)
-print(f"      Parâmetros treináveis (fase 1 - só cabeça): {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
 
 huber_delta = 50.0 / (Y_MAX - Y_MIN)  # delta normalizado para escala [0,1]
 criterion = nn.HuberLoss(delta=huber_delta)
@@ -313,10 +289,8 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 )
 FINETUNE_EPOCH = 3   # descongelar mais cedo para mais épocas de fine-tuning
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 5. LOOP DE TREINO
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n[4/5] Iniciando treino por {NUM_EPOCHS} épocas ...")
+print(f"\nIniciando treino por {NUM_EPOCHS} épocas ...")
 print(f"      Estratégia: Épocas 1-{FINETUNE_EPOCH-1} → só cabeça | Épocas {FINETUNE_EPOCH}+ → backbone descongelado\n")
 
 from utils_tcc import safe_path, salvar_json
@@ -377,7 +351,7 @@ for epoch in range(1, NUM_EPOCHS + 1):
             "model_state_dict": model.state_dict(),
             "y_min": Y_MIN, "y_max": Y_MAX, "img_size": IMG_SIZE,
         }, MODEL_PATH)
-        marker = "  ★ melhor val loss"
+        marker = "  * melhor val loss"
 
     elapsed = time.time() - t0
     print(f"  Época {epoch:02d}/{NUM_EPOCHS} | "
@@ -387,12 +361,9 @@ for epoch in range(1, NUM_EPOCHS + 1):
 
 print(f"\n  Melhor modelo: época {best_epoch} | Val Loss: {best_val_loss:.6f}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 6. MÉTRICAS DE AVALIAÇÃO
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[5/5] Calculando métricas no conjunto de validação ...")
+print("\nCalculando métricas no conjunto de validação ...")
 
-# Carregar o melhor modelo salvo (menor val loss)
 checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
 model.load_state_dict(checkpoint["model_state_dict"])
 print(f"      Usando pesos da época {best_epoch} (melhor val loss: {best_val_loss:.6f})")
@@ -425,22 +396,16 @@ print(f"""
   RELATÓRIO FINAL — CNN Baseline (ResNet18)
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  (Erro Absoluto Médio)  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 7. GERAÇÃO DOS GRÁFICOS
-# ─────────────────────────────────────────────────────────────────────────────
 print("  Gerando gráficos ...\n")
 DPI = 150
-SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
-GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
-os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
 # ─── 7.1 Curva de Loss ───────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -535,11 +500,8 @@ fig.savefig(path_corr, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_correlacao_linear.png")
 
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n{'='*60}")
 print(f"  Treino concluído. Gráficos em:")
 print(f"  {GRAFICOS_DIR}")
-print(f"{'='*60}\n")
 
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 npy_path = safe_path(os.path.join(SAVE_DIR, "predictions_cnn.npy"))

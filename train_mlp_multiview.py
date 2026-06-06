@@ -1,5 +1,5 @@
 """
-TCC FEI — MLP Multi-View
+MLP Multi-View
 Carrega pixels de vista lateral + traseira do mesmo animal, concatena e treina MLP.
 """
 
@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 
 from PIL import Image
 import kagglehub
@@ -30,16 +31,13 @@ SAVE_DIR     = os.path.dirname(os.path.abspath(__file__))
 GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — MLP Multi-View (side + rear pixels)")
-print(f"{'='*60}\n")
+print(f"  MLP Multi-View (side + rear pixels)")
 
 # ─── 1. Scan e pareamento de imagens ─────────────────────────────────────────
-print("[1/5] Escaneando dataset e montando pares side+rear ...")
+print("Escaneando dataset e montando pares side+rear ...")
 
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
-
 
 def parse_filename(filename, lote):
     name  = filename.replace(".jpg", "")
@@ -56,7 +54,6 @@ def parse_filename(filename, lote):
     except Exception:
         pass
     return None
-
 
 sides = {}
 rears = {}
@@ -100,13 +97,11 @@ for root, dirs, files in os.walk(base_dir):
             rears[key] = entry
 
 pairs = [(k, sides[k], rears[k]) for k in sides if k in rears]
-print(f"      Pares válidos: {len(pairs)}")
 
 # ─── 2. Extrair pixels (com cache) ───────────────────────────────────────────
-print("\n[2/5] Extraindo pixels side+rear (cache) ...")
+print("\nExtraindo pixels side+rear (cache) ...")
 CACHE_X = os.path.join(SAVE_DIR, f"mlp_multiview_cache_X_{IMG_SIZE}.npy")
 CACHE_Y = os.path.join(SAVE_DIR, f"mlp_multiview_cache_y_{IMG_SIZE}.npy")
-
 
 def segmentar(img_path, mask_path, cor):
     img_np  = np.array(Image.open(img_path).convert("RGB"))
@@ -119,13 +114,10 @@ def segmentar(img_path, mask_path, cor):
     out[~bov_mask] = 0
     return np.array(Image.fromarray(out).resize((IMG_SIZE, IMG_SIZE), Image.LANCZOS))
 
-
 if os.path.exists(CACHE_X) and os.path.exists(CACHE_Y):
-    print("      [CACHE] Carregando pixels pré-processados ...")
     X = np.load(CACHE_X)
     y = np.load(CACHE_Y)
 else:
-    print("      Processando imagens (pode demorar) ...")
     X_list, y_list = [], []
     for key, side_entry, rear_entry in pairs:
         try:
@@ -144,14 +136,10 @@ else:
     y = np.array(y_list)
     np.save(CACHE_X, X)
     np.save(CACHE_Y, y)
-    print("      [CACHE] Salvo para execuções futuras!")
-
-print(f"      Shape X (side+rear pixels): {X.shape}  |  y: {y.shape}")
 
 # ─── 3. Split + PCA ──────────────────────────────────────────────────────────
-print("\n[3/5] Split 80/20 + PCA ...")
+print("\nSplit 80/20 + PCA ...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
-print(f"      Treino: {len(X_train)} | Validação: {len(X_test)}")
 
 scaler  = StandardScaler()
 X_train = scaler.fit_transform(X_train)
@@ -160,11 +148,9 @@ X_test  = scaler.transform(X_test)
 pca     = PCA(n_components=256, random_state=SEED)
 X_train = pca.fit_transform(X_train)
 X_test  = pca.transform(X_test)
-print(f"      Shape após PCA(256): {X_train.shape}")
 
 # ─── 4. Treino MLP ───────────────────────────────────────────────────────────
-print("\n[4/5] Treinando MLP ...")
-print("      Arquitetura: 256 (PCA) → 256 → 128 → 64 → 1")
+print("\nTreinando MLP ...")
 
 mlp = MLPRegressor(
     hidden_layer_sizes=(256, 128, 64),
@@ -177,7 +163,6 @@ mlp = MLPRegressor(
     verbose=False,
 )
 mlp.fit(X_train, y_train)
-print(f"      Convergiu em {mlp.n_iter_} iterações")
 
 y_pred = np.clip(mlp.predict(X_test), 50.0, WEIGHT_MAX)
 
@@ -191,16 +176,15 @@ print(f"""
   RELATÓRIO FINAL — MLP Multi-View (pixels {IMG_SIZE}x{IMG_SIZE} side+rear)
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  (Erro Absoluto Médio)  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
 # ─── 5. Gráficos ─────────────────────────────────────────────────────────────
-print("[5/5] Gerando gráficos ...")
+print("Gerando gráficos ...")
 DPI    = 150
 errors = y_pred - y_test
 
@@ -213,7 +197,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_multiview_curva_loss.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_multiview_curva_loss.png")
+print("    [OK] mlp_multiview_curva_loss.png")
 
 # Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -227,7 +211,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_multiview_dispersao_r2.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_multiview_dispersao_r2.png")
+print("    [OK] mlp_multiview_dispersao_r2.png")
 
 # Histograma de erros
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -239,9 +223,8 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_multiview_histograma_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_multiview_histograma_erros.png")
+print("    [OK] mlp_multiview_histograma_erros.png")
 
-# Salvar
 from utils_tcc import safe_path, salvar_json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 np.save(safe_path(os.path.join(SAVE_DIR, "predictions_mlp_multiview.npy")), np.array([y_test, y_pred]))

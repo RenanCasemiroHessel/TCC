@@ -1,5 +1,5 @@
 """
-TCC FEI — XGBoost Multi-View
+XGBoost Multi-View
 Usa features de vista lateral + traseira do mesmo animal concatenadas.
 """
 
@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import xgboost as xgb
 
 from sklearn.model_selection import train_test_split
@@ -28,12 +29,10 @@ GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
 CSV_PATH = os.path.join(SAVE_DIR, "dataset_features_leves.csv")
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — XGBoost Multi-View")
-print(f"{'='*60}\n")
+print(f"  XGBoost Multi-View")
 
 # ─── 1. Carregar e parear ─────────────────────────────────────────────────────
-print("[1/4] Carregando e pareando features side+rear ...")
+print("Carregando e pareando features side+rear ...")
 df = pd.read_csv(CSV_PATH)
 
 df_side = df[df["vista"] == "side"].copy()
@@ -48,8 +47,6 @@ df_paired = pd.merge(
     df_back[["id_animal"]                    + [f"{c}_back"  for c in FEAT]],
     on="id_animal"
 ).dropna().drop_duplicates(subset=["id_animal"]).reset_index(drop=True)
-
-print(f"      Pares válidos: {len(df_paired)}")
 
 df_paired["sexo_M"] = (df_paired["sexo"] == "M").astype(float)
 
@@ -71,12 +68,11 @@ X = df_paired[features].values
 y = df_paired["peso_kg"].values
 
 # ─── 2. Split 80/20 ──────────────────────────────────────────────────────────
-print("[2/4] Dividindo dados (80/20) ...")
+print("Dividindo dados (80/20) ...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
-print(f"      Treino: {len(X_train)} | Validação: {len(X_test)}")
 
 # ─── 3. Treino XGBoost ───────────────────────────────────────────────────────
-print("[3/4] Treinando XGBoost Multi-View ...")
+print("Treinando XGBoost Multi-View ...")
 model = xgb.XGBRegressor(
     **BEST_PARAMS, random_state=SEED,
     objective="reg:squarederror", eval_metric="rmse",
@@ -98,16 +94,15 @@ print(f"""
   RELATÓRIO FINAL — XGBoost Multi-View
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  (Erro Absoluto Médio)  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
 # ─── 4. Gráficos ─────────────────────────────────────────────────────────────
-print("[4/4] Gerando gráficos ...")
+print("Gerando gráficos ...")
 DPI    = 150
 errors = y_pred - y_test
 
@@ -121,7 +116,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_curva_loss.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_multiview_curva_loss.png")
+print("    [OK] xgboost_multiview_curva_loss.png")
 
 # Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -135,7 +130,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_dispersao_r2.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_multiview_dispersao_r2.png")
+print("    [OK] xgboost_multiview_dispersao_r2.png")
 
 # Histograma de erros
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -147,7 +142,7 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_histograma_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_multiview_histograma_erros.png")
+print("    [OK] xgboost_multiview_histograma_erros.png")
 
 # Feature importance
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -159,9 +154,8 @@ ax.set_xlabel("Importância"); ax.grid(True, alpha=0.3, axis="x")
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_feature_importance.png"), dpi=DPI)
 plt.close()
-print("    ✓ xgboost_multiview_feature_importance.png")
+print("    [OK] xgboost_multiview_feature_importance.png")
 
-# Salvar
 from utils_tcc import safe_path, salvar_json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 np.save(safe_path(os.path.join(SAVE_DIR, "predictions_xgboost_multiview.npy")), np.array([y_test, y_pred]))

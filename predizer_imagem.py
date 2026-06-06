@@ -1,5 +1,5 @@
 """
-TCC FEI — Inferência por Imagem Única (com segmentação YOLO automática)
+Inferência por Imagem Única (com segmentação YOLO automática)
 Carrega o modelo ResNet18 treinado e prevê o peso de um bovino a partir de uma imagem.
 A segmentação é feita automaticamente via YOLOv11-seg (detecta a classe "cow" do COCO).
 
@@ -20,9 +20,7 @@ import torch
 import torch.nn as nn
 from torchvision import models, transforms
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG (deve bater com o treinar_cnn.py)
-# ─────────────────────────────────────────────────────────────────────────────
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
@@ -39,10 +37,7 @@ YOLO_PATH     = os.path.join(SCRIPT_DIR, "yolo11n-seg.pt")
 # Classe "cow" no COCO (usada pelo modelo YOLO pré-treinado)
 COCO_COW_CLASS = 19
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # FUNÇÕES
-# ─────────────────────────────────────────────────────────────────────────────
 
 def carregar_modelo(caminho_pth: str, device: torch.device):
     if not os.path.exists(caminho_pth):
@@ -70,7 +65,6 @@ def carregar_modelo(caminho_pth: str, device: torch.device):
     model.eval()
 
     return model, y_min, y_max, img_size
-
 
 def aplicar_yolo_mascara(img_path: str) -> Image.Image:
     """Segmenta o boi via YOLO e retorna imagem com fundo preto."""
@@ -128,9 +122,7 @@ def aplicar_yolo_mascara(img_path: str) -> Image.Image:
                     return Image.fromarray(masked_img)
 
     print("  [AVISO] Nenhuma segmentação encontrada. Usando imagem original.")
-    print("          Para melhor precisão, certifique-se de que o boi está visível na foto.")
     return img_pil
-
 
 def classificar_faixa(peso_kg: float) -> str:
     for baixo, alto, nome in FAIXAS:
@@ -138,12 +130,11 @@ def classificar_faixa(peso_kg: float) -> str:
             return nome
     return "Indefinida"
 
-
 def predizer(img_path: str, modelo_pth: str):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print(f"\n{'='*55}")
-    print(f"  TCC FEI — Inferência de Peso Bovino")
+    print(f"  Inferência de Peso Bovino")
     print(f"{'='*55}")
     print(f"  Dispositivo : {device}")
     print(f"  Modelo      : {os.path.basename(modelo_pth)}")
@@ -151,12 +142,11 @@ def predizer(img_path: str, modelo_pth: str):
     print(f"{'='*55}\n")
 
     # 1. Carregar modelo
-    print("  [1/3] Carregando modelo ...")
+    print("  Carregando modelo ...")
     model, y_min, y_max, img_size = carregar_modelo(modelo_pth, device)
-    print(f"        Escala de peso do treino: [{y_min:.0f} – {y_max:.0f}] kg")
 
     # 2. Segmentação automática com YOLO
-    print("  [2/3] Segmentando boi (YOLO automático) ...")
+    print("  Segmentando boi (YOLO automático) ...")
     if not os.path.exists(img_path):
         print(f"\n[ERRO] Imagem não encontrada: {img_path}")
         sys.exit(1)
@@ -171,7 +161,7 @@ def predizer(img_path: str, modelo_pth: str):
     tensor = transform(img_segmentada).unsqueeze(0).to(device)
 
     # 3. Inferência
-    print("  [3/3] Realizando predição ...")
+    print("  Realizando predição ...")
     with torch.no_grad():
         saida_norm = model(tensor).squeeze().item()
 
@@ -187,10 +177,7 @@ def predizer(img_path: str, modelo_pth: str):
 
     return peso_kg
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # ENTRADA
-# ─────────────────────────────────────────────────────────────────────────────
 
 def pedir_imagem() -> str:
     while True:
@@ -198,7 +185,6 @@ def pedir_imagem() -> str:
         if os.path.exists(caminho):
             return caminho
         print(f"  Arquivo não encontrado: {caminho}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Predição de peso bovino por imagem (YOLO automático)")

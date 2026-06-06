@@ -1,10 +1,9 @@
 """
-TCC FEI — Utilitários de salvamento seguro (sem sobrescrever arquivos existentes).
+Utilitários de salvamento seguro (sem sobrescrever arquivos existentes).
 """
 
 import os
 import json
-
 
 def safe_path(path):
     """Retorna caminho versionado se o original já existir. Ex: arquivo_v2.npy"""
@@ -15,7 +14,6 @@ def safe_path(path):
     while os.path.exists(f"{base}_v{v}{ext}"):
         v += 1
     return f"{base}_v{v}{ext}"
-
 
 def latest_file(base_path):
     """Retorna o arquivo mais recente (original ou última versão _vN)."""
@@ -33,7 +31,6 @@ def latest_file(base_path):
         latest = f"{base}_v{v}{ext}"
         v += 1
     return latest
-
 
 def salvar_json(results_path, chave_base, dados):
     """

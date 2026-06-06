@@ -1,5 +1,5 @@
 """
-TCC FEI — MLP (Multi-Layer Perceptron) para Estimativa de Peso Bovino
+MLP (Multi-Layer Perceptron) para Estimativa de Peso Bovino
 Pipeline: Imagens segmentadas (fundo preto) achatadas em vetor de pixels (como MNIST)
 Dataset: apenas leves (<250 kg), sem B3, sem duplicatas
 """
@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import seaborn as sns
 
 from PIL import Image
@@ -23,27 +24,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
 SEED       = 42
 IMG_SIZE   = 64           # 64x64 pixels (como MNIST 28x28, mas maior)
 WEIGHT_MAX = 250.0        # Dataset filtrado: só leves
 
 np.random.seed(SEED)
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — MLP para Estimativa de Peso Bovino")
-print(f"{'='*60}")
+print(f"  MLP para Estimativa de Peso Bovino")
 print(f"  Entrada  : Imagens segmentadas {IMG_SIZE}x{IMG_SIZE} (achatadas)")
 print(f"  Modelo   : MLPRegressor (sklearn)")
 print(f"  Dataset  : apenas leves (<{WEIGHT_MAX:.0f}kg), sem B3")
-print(f"{'='*60}\n")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 1. CARREGAR DATASET (via kagglehub, filtrado: sem B3, só leves)
-# ─────────────────────────────────────────────────────────────────────────────
-print("[1/5] Carregando dataset via kagglehub ...")
+print("Carregando dataset via kagglehub ...")
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
 
@@ -60,7 +54,6 @@ def extrair_peso(filename, caminho):
     return None
 
 records = []
-print("      Escaneando todos os subdiretórios recursivamente (sem B3, só leves)...")
 for root, dirs, files in os.walk(base_dir):
     if os.path.basename(root) == "images":
         pasta_imgs = root
@@ -105,12 +98,9 @@ df = pd.DataFrame(records)
 
 # Remover duplicatas (mesma imagem com mesmo peso)
 df = df.drop_duplicates(subset=["image_path"]).reset_index(drop=True)
-print(f"      Total de amostras (sem B3, só leves, sem duplicatas): {len(df)}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 2. EXTRAIR PIXELS DAS IMAGENS SEGMENTADAS (com cache por nome de filtro)
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[2/5] Extraindo pixels das imagens segmentadas...")
+print("\nExtraindo pixels das imagens segmentadas...")
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
@@ -122,7 +112,6 @@ if os.path.exists(CACHE_X) and os.path.exists(CACHE_Y):
     X = np.load(CACHE_X)
     y = np.load(CACHE_Y)
 else:
-    print("      [Aviso] Cache não encontrada. Processando imagens pela primeira vez (pode demorar)...")
     X_pixels = []
     y_labels = []
 
@@ -156,33 +145,23 @@ else:
     np.save(CACHE_Y, y)
     print("      [CACHE] Pixels salvos para execuções instantâneas futuras!")
 
-print(f"      Shape X (pixels): {X.shape}  |  Shape y: {y.shape}")
-
-# ─────────────────────────────────────────────────────────────────────────────
 # 3. SPLIT 80/20 & PCA
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/5] Dividindo dados (80% treino / 20% validação) ...")
+print("\nDividindo dados (80% treino / 20% validação) ...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=SEED
 )
-print(f"      Treino: {len(X_train)} | Validação: {len(X_test)}")
 
 scaler  = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test  = scaler.transform(X_test)
 
-print("      Aplicando PCA para extração de 128 componentes principais mais importantes...")
 from sklearn.decomposition import PCA
 pca = PCA(n_components=128, random_state=SEED)
 X_train = pca.fit_transform(X_train)
 X_test  = pca.transform(X_test)
-print(f"      Novo shape após PCA: X_train: {X_train.shape} | X_test: {X_test.shape}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 4. TREINO DO MLP
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[4/5] Treinando MLP ...")
-print("      Arquitetura: 128 (PCA) → 256 → 128 → 64 → 1 (regressão)")
+print("\nTreinando MLP ...")
 
 mlp = MLPRegressor(
     hidden_layer_sizes=(256, 128, 64),
@@ -195,16 +174,13 @@ mlp = MLPRegressor(
     verbose=False,
 )
 mlp.fit(X_train, y_train)
-print(f"      Convergiu em {mlp.n_iter_} iterações")
 
 y_pred = mlp.predict(X_test)
 # Clipar predições ao range do dataset (MLP não tem restrição de saída)
 WEIGHT_MIN = 50.0
 y_pred = np.clip(y_pred, WEIGHT_MIN, WEIGHT_MAX)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 5. MÉTRICAS
-# ─────────────────────────────────────────────────────────────────────────────
 mae  = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2   = r2_score(y_test, y_pred)
@@ -217,18 +193,15 @@ print(f"""
   RELATÓRIO FINAL — MLP (pixels segmentados {IMG_SIZE}x{IMG_SIZE})
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  (Erro Absoluto Médio)  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 6. GRÁFICOS
-# ─────────────────────────────────────────────────────────────────────────────
-print("[5/5] Gerando gráficos ...\n")
+print("Gerando gráficos ...\n")
 DPI    = 150
 errors = y_pred - y_test
 
@@ -246,7 +219,7 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_curva_loss.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_curva_loss.png")
+print("    [OK] mlp_curva_loss.png")
 
 # 6.2 Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -260,7 +233,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_grafico_dispersao_r2.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_grafico_dispersao_r2.png")
+print("    [OK] mlp_grafico_dispersao_r2.png")
 
 # 6.3 Histograma de Erros
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -272,7 +245,7 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_histograma_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_histograma_erros.png")
+print("    [OK] mlp_histograma_erros.png")
 
 # 6.4 Gráfico de Correlação Linear
 fig, ax = plt.subplots(figsize=(8, 7))
@@ -289,13 +262,10 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_correlacao_linear.png"), dpi=DPI)
 plt.close()
-print("    ✓ mlp_correlacao_linear.png")
+print("    [OK] mlp_correlacao_linear.png")
 
-print(f"\n{'='*60}")
 print(f"  Gráficos gerados em: {GRAFICOS_DIR}")
-print(f"{'='*60}\n")
 
-# Salvar predições para boxplot comparativo em comparar_modelos.py
 from utils_tcc import safe_path, salvar_json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 npy_path = safe_path(os.path.join(SAVE_DIR, "predictions_mlp.npy"))

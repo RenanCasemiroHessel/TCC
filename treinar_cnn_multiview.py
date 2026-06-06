@@ -1,5 +1,5 @@
 """
-TCC FEI — CNN Multi-View (ResNet18 Siamesa) para Estimativa de Peso Bovino
+CNN Multi-View (ResNet18 Siamesa) para Estimativa de Peso Bovino
 Usa par de imagens (lateral + traseira) do mesmo animal para predição.
 Split por animal (sem data leakage).
 """
@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import time
 import json
 
@@ -28,17 +29,16 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 import kagglehub
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
-SEED          = 42
-IMG_SIZE      = 224
-BATCH_SIZE    = 16      # 2 imagens por amostra → metade do batch single-view
-NUM_EPOCHS    = 15
-LEARNING_RATE = 1e-4
-WEIGHT_MAX    = 250.0
-SAMPLE_FRAC   = 1.0     # 1.0 = dataset completo; 0.1 = teste rápido
-FINETUNE_EPOCH = 3      # descongelar backbone a partir desta época
+SEED           = 42
+IMG_SIZE       = 224
+BATCH_SIZE     = 16      # 2 imagens por amostra → metade do batch single-view
+NUM_EPOCHS     = 30
+LEARNING_RATE  = 1e-4
+WEIGHT_MAX     = 250.0
+SAMPLE_FRAC    = 1.0     # 1.0 = dataset completo; 0.1 = teste rápido
+FINETUNE_EPOCH = 3       # descongelar backbone a partir desta época
+AUG_MULTIPLIER = 4       # repete dataset de treino N vezes com augmentações diferentes
 
 torch.manual_seed(SEED)
 np.random.seed(SEED)
@@ -52,23 +52,17 @@ os.makedirs(GRAFICOS_DIR, exist_ok=True)
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — CNN Multi-View (ResNet18 Siamesa)")
-print(f"{'='*60}")
+print(f"  CNN Multi-View (ResNet18 Siamesa)")
 print(f"  Device     : {DEVICE}")
 print(f"  Épocas     : {NUM_EPOCHS}")
 print(f"  Batch size : {BATCH_SIZE}")
 print(f"  IMG_SIZE   : {IMG_SIZE}x{IMG_SIZE}")
-print(f"{'='*60}\n")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 1. SCAN DO DATASET — coleta pares (lateral, traseira) por animal
-# ─────────────────────────────────────────────────────────────────────────────
-print("[1/5] Escaneando dataset e montando pares side+rear ...")
+print("Escaneando dataset e montando pares side+rear ...")
 
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
-
 
 def parse_filename(filename, lote):
     name = filename.replace(".jpg", "")
@@ -86,10 +80,8 @@ def parse_filename(filename, lote):
         pass
     return None
 
-
 def cor_mascara(img_path):
     return np.array([0, 255, 0, 255]) if "B2" in img_path else np.array([255, 30, 249, 255])
-
 
 sides = {}  # key → {"path", "mask", "weight", "lote"}
 rears = {}
@@ -145,27 +137,33 @@ for key in sides:
         })
 
 df = pd.DataFrame(rows)
-print(f"      Pares válidos (side+rear, <{WEIGHT_MAX:.0f}kg, sem B3): {len(df)}")
+
+# ── Log detalhado do dataset ──────────────────────────────────────────────────
+total_imagens = len(df) * 2  # side + rear por par
+lotes_count   = df["lote"].value_counts().to_dict()
+print(f"""
+    print("\nResultados:")
+    print(f"Pares válidos (side+rear)  : {len(df):>6}")
+    print(f"Imagens únicas observadas  : {total_imagens:>6} (2 por par)")
+    print(f"Lote B2  : {lotes_count.get('B2',0):>6} pares")
+    print(f"Lote B4  : {lotes_count.get('B4',0):>6} pares")
+    print(f"Filtro de peso  : 50–{WEIGHT_MAX:.0f} kg")
+    print(f"ConcatDataset {AUG_MULTIPLIER}x → {len(df)*AUG_MULTIPLIER:>6} pares efetivos/época")
+""")
 
 if SAMPLE_FRAC < 1.0:
     df = df.sample(frac=SAMPLE_FRAC, random_state=SEED).reset_index(drop=True)
-    print(f"      [SAMPLE_FRAC={SAMPLE_FRAC}] Usando {len(df)} pares")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 2. SPLIT 80/20 POR ANIMAL (sem data leakage)
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[2/5] Dividindo dados por animal (80/20) ...")
+print("\nDividindo dados por animal (80/20) ...")
 
 keys = df["key"].tolist()
 train_keys, val_keys = train_test_split(keys, test_size=0.2, random_state=SEED)
 
 train_df = df[df["key"].isin(train_keys)].reset_index(drop=True)
 val_df   = df[df["key"].isin(val_keys)].reset_index(drop=True)
-print(f"      Treino: {len(train_df)} pares | Validação: {len(val_df)} pares")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 3. DATASET E TRANSFORMS
-# ─────────────────────────────────────────────────────────────────────────────
 train_transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.RandomHorizontalFlip(),
@@ -182,7 +180,6 @@ val_transform = transforms.Compose([
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
 
-
 def load_segmented(img_path, mask_path):
     """Carrega imagem com fundo removido usando máscara anotada."""
     try:
@@ -198,7 +195,6 @@ def load_segmented(img_path, mask_path):
         return Image.fromarray(out)
     except Exception:
         return Image.fromarray(np.zeros((IMG_SIZE, IMG_SIZE, 3), dtype=np.uint8))
-
 
 class MultiViewDataset(Dataset):
     def __init__(self, dataframe, transform=None):
@@ -218,25 +214,26 @@ class MultiViewDataset(Dataset):
             rear_img = self.transform(rear_img)
         return side_img, rear_img, weight
 
+train_dataset_base = MultiViewDataset(train_df, train_transform)
+val_dataset        = MultiViewDataset(val_df,   val_transform)
 
-train_dataset = MultiViewDataset(train_df, train_transform)
-val_dataset   = MultiViewDataset(val_df,   val_transform)
+# ConcatDataset: cada cópia vê augmentações aleatórias diferentes → sem custo em disco
+from torch.utils.data import ConcatDataset
+train_dataset = ConcatDataset([train_dataset_base] * AUG_MULTIPLIER)
+
+print(f"      Augmentação {AUG_MULTIPLIER}x: {len(train_dataset_base)} → {len(train_dataset)} pares efetivos de treino")
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
                           num_workers=4, pin_memory=torch.cuda.is_available())
 val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False,
                           num_workers=4, pin_memory=torch.cuda.is_available())
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 4. MODELO — ResNet18 Siamesa (backbone compartilhado)
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/5] Construindo modelo (ResNet18 Siamesa) ...")
+print("\nConstruindo modelo (ResNet18 Siamesa) ...")
 
 train_weights = train_df["weight"].values
 Y_MIN = float(train_weights.min())
 Y_MAX = float(train_weights.max())
-print(f"      Normalização do alvo: [{Y_MIN:.0f}, {Y_MAX:.0f}] kg → [0, 1]")
-
 
 class SiameseResNet(nn.Module):
     """
@@ -264,7 +261,6 @@ class SiameseResNet(nn.Module):
         feat      = torch.cat([feat_side, feat_rear], dim=1)   # (B, 1024)
         return self.head(feat)
 
-
 model = SiameseResNet().to(DEVICE)
 
 # Fase 1: congelar backbone
@@ -273,7 +269,6 @@ for name, param in model.named_parameters():
         param.requires_grad = False
 
 n_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
-print(f"      Parâmetros treináveis (fase 1 - só cabeça): {n_train:,}")
 
 huber_delta = 50.0 / (Y_MAX - Y_MIN)
 criterion   = nn.HuberLoss(delta=huber_delta)
@@ -283,10 +278,8 @@ scheduler   = torch.optim.lr_scheduler.CosineAnnealingLR(
     optimizer, T_max=NUM_EPOCHS, eta_min=1e-6
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 5. LOOP DE TREINO
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n[4/5] Iniciando treino por {NUM_EPOCHS} épocas ...")
+print(f"\nIniciando treino por {NUM_EPOCHS} épocas ...")
 print(f"      Épocas 1-{FINETUNE_EPOCH-1}: só cabeça | Época {FINETUNE_EPOCH}+: backbone descongelado\n")
 
 history       = {"train_loss": [], "val_loss": []}
@@ -343,7 +336,7 @@ for epoch in range(1, NUM_EPOCHS + 1):
             "model_state_dict": model.state_dict(),
             "y_min": Y_MIN, "y_max": Y_MAX, "img_size": IMG_SIZE,
         }, MODEL_PATH)
-        marker = "  ★ melhor val loss"
+        marker = "  * melhor val loss"
 
     elapsed = time.time() - t0
     print(f"  Época {epoch:02d}/{NUM_EPOCHS} | "
@@ -353,10 +346,8 @@ for epoch in range(1, NUM_EPOCHS + 1):
 
 print(f"\n  Melhor modelo: época {best_epoch} | Val Loss: {best_val_loss:.6f}")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 6. AVALIAÇÃO FINAL (usando melhor checkpoint)
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[5/5] Calculando métricas finais ...")
+print("\nCalculando métricas finais ...")
 
 checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
 model.load_state_dict(checkpoint["model_state_dict"])
@@ -386,17 +377,14 @@ print(f"""
   RELATÓRIO FINAL — CNN Multi-View (ResNet18 Siamesa)
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  (Erro Absoluto Médio)    : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  (Erro Absoluto Médio)  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 7. GRÁFICOS
-# ─────────────────────────────────────────────────────────────────────────────
 print("  Gerando gráficos ...\n")
 DPI = 150
 
@@ -459,9 +447,7 @@ fig.savefig(os.path.join(GRAFICOS_DIR, "cnn_multiview_correlacao_linear.png"), d
 plt.close(fig)
 print("  [OK] cnn_multiview_correlacao_linear.png")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 8. SALVAR RESULTADOS
-# ─────────────────────────────────────────────────────────────────────────────
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 np.save(safe_path(os.path.join(SAVE_DIR, "predictions_cnn_multiview.npy")), np.array([y_true, y_pred]))
 salvar_json(RESULTS_PATH, "CNN Multi-View", {
@@ -472,4 +458,3 @@ salvar_json(RESULTS_PATH, "CNN Multi-View", {
 print(f"\n  Modelo salvo : resnet18_multiview_gado.pth  (época {best_epoch})")
 print(f"  Resultados   : resultados_modelos.json")
 print(f"  Gráficos     : graficos/")
-print(f"\n{'='*60}\n")

@@ -1,5 +1,5 @@
 """
-TCC FEI — Regressão Linear Multi-View (Ridge + Polinomial)
+Regressão Linear Multi-View (Ridge + Polinomial)
 Usa features de vista lateral + traseira do mesmo animal concatenadas.
 """
 
@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
@@ -27,12 +28,10 @@ GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
 CSV_PATH = os.path.join(SAVE_DIR, "dataset_features_leves.csv")
 
-print(f"\n{'='*60}")
-print(f"  TCC FEI — Regressão Linear Multi-View")
-print(f"{'='*60}\n")
+print(f"  Regressão Linear Multi-View")
 
 # ─── 1. Carregar e parear ─────────────────────────────────────────────────────
-print("[1/4] Carregando e pareando features side+rear ...")
+print("Carregando e pareando features side+rear ...")
 df = pd.read_csv(CSV_PATH)
 
 df_side = df[df["vista"] == "side"].copy()
@@ -47,8 +46,6 @@ df_paired = pd.merge(
     df_back[["id_animal"]                    + [f"{c}_back"  for c in FEAT]],
     on="id_animal"
 ).dropna().drop_duplicates(subset=["id_animal"]).reset_index(drop=True)
-
-print(f"      Pares válidos: {len(df_paired)}")
 
 # One-Hot sexo
 df_paired["sexo_M"] = (df_paired["sexo"] == "M").astype(float)
@@ -72,9 +69,8 @@ X = df_paired[features].values
 y = df_paired["peso_kg"].values
 
 # ─── 2. Split 80/20 ──────────────────────────────────────────────────────────
-print("[2/4] Dividindo dados (80/20) ...")
+print("Dividindo dados (80/20) ...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
-print(f"      Treino: {len(X_train)} | Validação: {len(X_test)}")
 
 scaler  = StandardScaler()
 X_train_sc = scaler.fit_transform(X_train)
@@ -83,10 +79,9 @@ X_test_sc  = scaler.transform(X_test)
 poly    = PolynomialFeatures(degree=POLY_DEGREE, include_bias=False)
 X_train = poly.fit_transform(X_train_sc)
 X_test  = poly.transform(X_test_sc)
-print(f"      Features após PolynomialFeatures(degree={POLY_DEGREE}): {X_train.shape[1]}")
 
 # ─── 3. Treino ───────────────────────────────────────────────────────────────
-print("[3/4] Treinando Ridge Regression ...")
+print("Treinando Ridge Regression ...")
 model = Ridge(alpha=RIDGE_ALPHA)
 model.fit(X_train, y_train)
 
@@ -104,17 +99,16 @@ print(f"""
   RELATÓRIO FINAL — Regressão Linear Multi-View
 {'='*60}
 
-  ┌─ MÉTRICAS DE REGRESSÃO ─────────────────────────────────┐
-  │  MAE  Treino                   : {mae_train:>8.2f} kg           │
-  │  MAE  Validação                : {mae:>8.2f} kg           │
-  │  RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg           │
-  │  R²   (Coef. de Determinação)  : {r2:>8.4f}               │
-  │  Pearson r                     : {pearson_r:>8.4f}               │
-  └──────────────────────────────────────────────────────────┘
+    print("\nResultados:")
+    print(f"MAE  Treino  : {mae_train:>8.2f} kg")
+    print(f"MAE  Validação  : {mae:>8.2f} kg")
+    print(f"RMSE (Raiz do Erro Quadrático): {rmse:>8.2f} kg")
+    print(f"R²  (Coef. de Determinação)  : {r2:>8.4f}")
+    print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
 # ─── 4. Gráficos ─────────────────────────────────────────────────────────────
-print("[4/4] Gerando gráficos ...")
+print("Gerando gráficos ...")
 DPI    = 150
 errors = y_pred - y_test
 
@@ -130,7 +124,7 @@ ax.set_ylabel("MAE (kg)"); ax.grid(True, alpha=0.3, axis="y")
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_multiview_curva_loss.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_multiview_curva_loss.png")
+print("    [OK] lr_multiview_curva_loss.png")
 
 # Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
@@ -144,7 +138,7 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_multiview_dispersao_r2.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_multiview_dispersao_r2.png")
+print("    [OK] lr_multiview_dispersao_r2.png")
 
 # Histograma de erros
 fig, ax = plt.subplots(figsize=(9, 5))
@@ -158,9 +152,8 @@ ax.legend(); ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(GRAFICOS_DIR, "lr_multiview_histograma_erros.png"), dpi=DPI)
 plt.close()
-print("    ✓ lr_multiview_histograma_erros.png")
+print("    [OK] lr_multiview_histograma_erros.png")
 
-# Salvar
 from utils_tcc import safe_path, salvar_json
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 np.save(safe_path(os.path.join(SAVE_DIR, "predictions_lr_multiview.npy")), np.array([y_test, y_pred]))

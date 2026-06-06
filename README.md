@@ -1,82 +1,183 @@
-# Estimativa de Peso Bovino por Visão Computacional 🐄
+# Predição de Peso de Bovinos por Visão Computacional
 
-Este repositório contém o código-fonte desenvolvido para o Trabalho de Conclusão de Curso (TCC) da FEI. O objetivo deste projeto é estimar o peso corporal de bovinos utilizando imagens aéreas, comparando o desempenho de algoritmos clássicos de regressão e modelos avançados de Redes Neurais Convolucionais (CNN).
+**Trabalho de Conclusão de Curso — Centro Universitário FEI, 1º semestre/2026**
 
----
-
-## Arquitetura do Projeto
-
-O pipeline preditivo é composto por duas abordagens principais:
-1. **Modelos Tabulares (Estatísticos e Baseados em Árvore):** Utilizam um conjunto de features geométricas extraídas previamente (ex.: área e proporção da Bounding Box). Implementou-se Regressão Linear Clássica e XGBoost com otimização via GridSearch.
-2. **Modelos de Visão Computacional (Deep Learning):** Processam as imagens diretamente, utilizando Redes Densas (MLP com PCA) e Redes Convolucionais com Transfer Learning (ResNet18).
-
-Todas as falhas e depreciações do código original foram rigorosamente revisadas, garantindo um ambiente robusto, reproduzível e com total aproveitamento do *dataset*.
+Autores: Gustavo Mendes Franco Lapin Atui · Rafael Takahagi Mendes · Renan Casemiro Hessel
 
 ---
 
-## Guia de Configuração e Execução
+## Resumo
 
-### 1. Configuração do Ambiente Virtual
-Recomenda-se a utilização de uma versão atualizada do Python (3.9+). Execute os comandos abaixo para inicializar o ambiente de dependências:
+Pipeline completo para estimar o peso corporal de bovinos a partir de imagens, sem contato físico com o animal. O sistema combina segmentação automática com YOLO11n-seg, extração de atributos morfométricos e oito configurações experimentais de modelos de regressão — quatro *single-view* (uma imagem por animal) e quatro *multi-view* (vista lateral + traseira do mesmo indivíduo). O melhor resultado obtido foi com a CNN Multi-View: **MAE = 20,75 kg · R² = 0,407 · Pearson r = 0,667**.
+
+---
+
+## Dataset
+
+- **Fonte:** [BMGF-LivestockWeight-CV](https://www.kaggle.com/datasets/sadhliroomyprime/cattle-weight-detection-model-dataset-12k) — baixado automaticamente via `kagglehub`
+- **Lotes utilizados:** B2 e B4 (B3 descartado por conter dados clonados)
+- **Filtro aplicado:** 50 kg ≤ peso < 250 kg
+- **Total:** 4.818 imagens válidas → 2.397 pares lateral+traseira
+- **Anotações:** máscaras semânticas fornecidas pelo dataset (cor do corpo do bovino por lote)
+
+---
+
+## Estrutura do Pipeline
+
+```
+Imagem Bruta
+    │
+    ▼
+YOLO11n-seg  →  Imagem Segmentada (fundo preto)
+    │
+    ▼
+Extração de Features Morfométricas
+(área, altura, largura, proporção, fill_ratio, vol_approx, sexo, vista)
+    │
+    ├─ Single-View (4.818 amostras)
+    │       Regressão Linear · XGBoost · MLP · CNN ResNet18
+    │
+    └─ Multi-View (2.397 pares)
+            Regressão Linear MV · XGBoost MV · MLP MV · CNN MV (backbone compartilhado)
+    │
+    ▼
+Peso Estimado (kg)
+```
+
+---
+
+## Resultados
+
+| Modelo | MAE (kg) | RMSE (kg) | R² | Pearson r | Ac. ±10% |
+|---|---|---|---|---|---|
+| Regressão Linear | 25,90 | 32,29 | 0,157 | 0,398 | 38,1% |
+| XGBoost | 26,00 | 32,51 | 0,146 | 0,383 | 38,4% |
+| MLP (PCA) | 29,33 | 37,00 | −0,143 | 0,200 | 34,3% |
+| CNN ResNet18 | 26,42 | 34,17 | 0,416 | — | — |
+| LR Multi-View | 23,82 | 29,95 | 0,245 | 0,496 | 41,9% |
+| XGBoost Multi-View | 23,84 | 29,93 | 0,246 | 0,497 | 42,3% |
+| MLP Multi-View | 29,04 | 37,69 | −0,233 | 0,310 | 34,8% |
+| **CNN Multi-View** | **20,75** | **26,09** | **0,407** | **0,667** | **48,1%** |
+
+Acurácia ±10%: proporção de predições com \|ŷ − y\| ≤ 0,10 × y.
+
+---
+
+## Configuração do Ambiente
+
+Requer Python 3.10+ e uma conta no Kaggle configurada para `kagglehub`.
 
 ```bash
-# Inicialização e ativação do ambiente virtual
+# Criar e ativar ambiente virtual
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
 
-# Instalação das bibliotecas necessárias (KaggleHub, PyTorch, XGBoost, Scikit-Learn, etc.)
+# Instalar dependências
 pip install -r requirements.txt
 ```
 
-### 2. Execução Automatizada (Pipeline Completo)
-O projeto conta com um script de orquestração (`rodar_tudo.sh`) que enfileira o treinamento e validação de todos os modelos, da menor para a maior complexidade computacional, finalizando com a geração gráfica das métricas.
+O dataset (~4 GB) é baixado automaticamente na primeira execução de qualquer script de treinamento.
+
+---
+
+## Descrição dos Scripts
+
+### Pré-processamento
+
+| Script | Descrição |
+|---|---|
+| `preparar_dataset_kaggle.py` | Baixa o dataset via kagglehub e extrai as features morfométricas de todas as imagens, gerando `dataset_features_completo.csv` |
+| `filtrar_dataset.py` | Aplica os filtros de peso e lote, gerando `dataset_features_leves.csv` (arquivo base para todos os modelos) |
+| `visualizar_segmentacao.py` | Gera mosaico visual Original · Máscara · Segmentada para amostras de cada lote |
+
+### Modelos Single-View
+
+| Script | Descrição |
+|---|---|
+| `train_linear_regression.py` | Regressão Ridge + PolynomialFeatures (grau 2) — baseline interpretável |
+| `train_lr_multiview.py` | Versão Multi-View da Regressão Linear (features de ambas as vistas concatenadas) |
+| `train_xgboost.py` | XGBoost com features alométricas e otimização por GridSearch |
+| `tune_xgboost.py` | Busca de hiperparâmetros estendida para o XGBoost |
+| `train_mlp.py` | MLP sobre pixels comprimidos por PCA(256); inclui cache `.npy` para acelerar reexecuções |
+| `treinar_cnn.py` | CNN ResNet18 single-view com fine-tuning progressivo |
+
+### Modelos Multi-View
+
+| Script | Descrição |
+|---|---|
+| `train_lr_multiview.py` | Regressão Ridge com features de lateral + traseira concatenadas |
+| `train_xgboost_multiview.py` | XGBoost com vetor de 17 features (9 por vista + sexo) |
+| `train_mlp_multiview.py` | MLP sobre pixels concatenados de ambas as vistas, reduzidos por PCA(256) |
+| `treinar_cnn_multiview.py` | **Melhor modelo:** CNN ResNet18 com backbone compartilhado processando ambas as vistas em paralelo; treinada com ConcatDataset 4× e fine-tuning progressivo |
+
+### Comparação e Inferência
+
+| Script | Descrição |
+|---|---|
+| `comparar_modelos.py` | Lê `resultados_modelos.json` e gera boxplots, histogramas e curvas de overfitting comparativos |
+| `gerar_graficos_tcc.py` | Regenera todos os gráficos do TCC com fontes maiores a partir dos arquivos `.npy` e `.csv` salvos |
+| `predizer_imagem.py` | Inferência em imagem única: segmenta automaticamente com YOLO11n-seg e estima o peso |
+| `utils_tcc.py` | Utilitários compartilhados: salvamento seguro de arquivos (`safe_path`, `salvar_json`) |
+
+---
+
+## Ordem de Execução (pipeline completo do zero)
 
 ```bash
-bash rodar_tudo.sh
+# 1. Gerar CSV com todas as features
+python preparar_dataset_kaggle.py
+
+# 2. Filtrar dataset (50–250 kg, lotes B2 e B4)
+python filtrar_dataset.py
+
+# 3. Treinar modelos single-view
+python train_linear_regression.py
+python train_xgboost.py
+python train_mlp.py
+python treinar_cnn.py
+
+# 4. Treinar modelos multi-view
+python train_lr_multiview.py
+python train_xgboost_multiview.py
+python train_mlp_multiview.py
+python treinar_cnn_multiview.py   # requer GPU; ~30 épocas
+
+# 5. Gerar comparativos e gráficos
+python comparar_modelos.py
+python gerar_graficos_tcc.py
+
+# 6. Inferência em imagem nova (opcional)
+python predizer_imagem.py --imagem caminho/para/foto.jpg
 ```
 
-A ordem de execução padrão é:
-1. `train_linear_regression.py`
-2. `train_xgboost.py`
-3. `tune_xgboost.py`
-4. `train_mlp.py`
-5. `treinar_cnn.py`
-6. `comparar_modelos.py`
+---
 
-*(Observação: A primeira execução irá baixar o dataset via KaggleHub, totalizando ~4GB de arquivos de imagem. Uma conexão de banda larga é recomendada).*
+## Arquivos Gerados
+
+Após execução completa, os seguintes arquivos são criados na raiz do projeto:
+
+- `dataset_features_leves.csv` — dataset tabular filtrado (4.818 amostras)
+- `predictions_*.npy` — predições de cada modelo (formato `[y_real, y_pred]`)
+- `resultados_modelos.json` — métricas consolidadas de todos os modelos
+- `graficos/` — todos os gráficos gerados em PNG (150 DPI)
+- `yolo11n-seg.pt` — checkpoint do modelo de segmentação (baixado automaticamente)
 
 ---
 
-## Descritivo dos Módulos (Scripts)
+## Dependências Principais
 
-| Módulo/Arquivo | Descrição Técnica e Funções |
-| :--- | :--- |
-| `dataset_features_completo.csv` | *Dataset* tabular consolidado com variáveis geométricas pré-computadas de cada imagem. |
-| `train_linear_regression.py` | Baseline linear preditivo. Usado para ilustrar as limitações da regressão plana em inferências volumétricas. |
-| `train_xgboost.py` / `tune_xgboost.py` | Modelo impulsionado por árvores. Introduz Engenharia de Atributos, especificamente modelagem Alométrica ($Área^{1.5}$) e *Fill Ratios*. Otimizado via GridSearch. |
-| `train_mlp.py` | Implementação do Perceptron Multicamadas (Fully Connected). Inclui *caching* automatizado e redução de dimensionalidade por Análise de Componentes Principais (PCA) para prevenir *overfitting*. |
-| `treinar_cnn.py` | Modelo de estado da arte utilizando a arquitetura *ResNet18*. Aplica estratégias de *Fine-Tuning* progressivo (descongelamento do *backbone*) e métricas dinâmicas. O *dataset loader* agora pesquisa o diretório de forma inteiramente recursiva. |
-| `comparar_modelos.py` | Script interpretador que consome a matriz de métricas (`resultados_modelos.json`) e renderiza histogramas, *boxplots* e curvas comparativas. |
-| `visualizar_segmentacao.py` | Ferramenta visual auxiliar que renderiza a imagem real com a respectiva máscara de corte lado a lado. Útil para demonstrações acadêmicas. |
-
----
-
-## Síntese dos Resultados Recentes
-
-| Modelo | MAE ($kg$) | $R^2$ | Considerações Analíticas |
-| :--- | :--- | :--- | :--- |
-| Regressão Linear | ~31.0 | 4.0% | Baixo potencial de variância descritiva devido à não-linearidade geométrica. |
-| XGBoost (Tuned) | ~28.6 | 16.6% | Excelente equilíbrio custo-benefício computacional graças às novas *features* alométricas inseridas. |
-| **CNN (ResNet18)** | **~26.4** | **41.6%** | Maior poder de generalização anatômica, garantindo assertividade inclusive nas camadas mais escassas (bois médios/pesados). |
+- Python 3.10+
+- PyTorch + torchvision
+- ultralytics (YOLO11)
+- scikit-learn
+- xgboost
+- pandas / numpy / matplotlib / seaborn
+- kagglehub
+- Pillow
 
 ---
 
-## Notas aos Desenvolvedores do Grupo
+## Citação do Dataset
 
-Para a manutenção correta da integridade deste repositório, favor atentar-se aos seguintes pontos arquiteturais que foram corrigidos nas últimas atualizações:
-
-1. **Loader do Dataset:** O *scanner* original foi totalmente refatorado. Atualmente o código varre o diretório do Kaggle de forma *recursiva*. Isso garantiu que saltássemos de ~4.800 imagens originais (que possuíam pastas fixas no código) para a base real unificada de **7.509 imagens**, abrangendo ângulos negligenciados (como *Rear* e as variações secundárias *Back_2*). 
-2. **Cache da MLP:** Para acelerar a extração iterativa, a MLP salvará um buffer de cache em `.npy` na primeira execução. Caso haja qualquer modificação no parâmetro `IMG_SIZE`, deve-se excluir esses arquivos no repositório para forçar uma nova extração matricial.
-3. **Módulo de Geração Gráfica:** Todos os ativos gerados (.png) foram formatados nas resoluções padronizadas e unificados (ex.: `cnn_curva_loss.png`), de modo que possam ser prontamente anexados ao corpo do artigo. O código está estabilizado contra sub-classes ausentes durante *splits* aleatórios (ex.: erro do SciKit-Learn ao omitir pesos acima de 450kg na camada de validação).
-
-Todo o código segue padrões limpos, metodologias atualizadas do Pandas/Scikit-Learn e está estruturado sob boas práticas da Engenharia de Software focada em Dados.
+Islam, M. et al. "BMGF-LivestockWeight-CV: A benchmark dataset for livestock body weight estimation using computer vision." *Data in Brief*, v. 54, p. 110480, 2024. DOI: 10.1016/j.dib.2024.110480

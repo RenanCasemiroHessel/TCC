@@ -1,5 +1,5 @@
 """
-TCC FEI — Visualização das Imagens Segmentadas
+Visualização das Imagens Segmentadas
 Gera um mosaico mostrando: Original | Máscara | Imagem Segmentada (fundo preto)
 para amostras de cada lote (B2, B3, B4)
 """
@@ -12,26 +12,23 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import matplotlib.gridspec as gridspec
 from PIL import Image
 import kagglehub
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
 AMOSTRAS_POR_LOTE = 3   # quantas imagens mostrar por lote
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
 print("\n" + "="*60)
-print("  TCC FEI — Visualização de Segmentação por Lote")
+print("  Visualização de Segmentação por Lote")
 print("="*60 + "\n")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # LOCALIZAR DATASET
-# ─────────────────────────────────────────────────────────────────────────────
-print("[1/3] Localizando dataset via kagglehub ...")
+print("Localizando dataset via kagglehub ...")
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
 
@@ -41,10 +38,8 @@ pastas_lote = {
     "B4 (Magenta)":    (os.path.join(base_dir, "B4", "Side"), np.array([255, 30, 249, 255])),
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
 # COLETAR AMOSTRAS
-# ─────────────────────────────────────────────────────────────────────────────
-print("[2/3] Coletando amostras de cada lote ...")
+print("Coletando amostras de cada lote ...")
 
 amostras = {}   # lote -> lista de (img_np, mask_np, seg_np, peso, img_file)
 
@@ -69,17 +64,14 @@ for lote_nome, (pasta, cor_alvo) in pastas_lote.items():
             continue
 
         try:
-            # Carregar imagem original
             img_np = np.array(Image.open(img_path).convert("RGB"))
 
-            # Carregar máscara
             mask_pil = Image.open(mask_path)
             mask_np  = np.array(mask_pil)
             if mask_np.shape[-1] == 3:
                 alpha   = np.full((*mask_np.shape[:2], 1), 255, dtype=np.uint8)
                 mask_np = np.concatenate([mask_np, alpha], axis=-1)
 
-            # Criar segmentação (fundo preto)
             bovino_mask = np.all(mask_np == cor_alvo, axis=-1)
             seg_np      = img_np.copy()
             seg_np[~bovino_mask] = 0
@@ -111,12 +103,9 @@ for lote_nome, (pasta, cor_alvo) in pastas_lote.items():
             print(f"  Erro ao processar {img_file}: {e}")
             continue
 
-    print(f"  ✓ Lote {lote_nome}: {len(amostras[lote_nome])} amostras coletadas")
+    print(f"  [OK] Lote {lote_nome}: {len(amostras[lote_nome])} amostras coletadas")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GERAR MOSAICO
-# ─────────────────────────────────────────────────────────────────────────────
-print("\n[3/3] Gerando mosaico de visualização ...")
+print("\nGerando mosaico de visualização ...")
 
 n_lotes  = len(pastas_lote)
 n_cols   = 3   # Original | Máscara | Segmentada
@@ -125,7 +114,7 @@ fig = plt.figure(figsize=(16, n_lotes * AMOSTRAS_POR_LOTE * 4 + 2))
 fig.patch.set_facecolor("#1A1A2E")
 
 titulo_geral = fig.suptitle(
-    "TCC FEI — Visualização de Segmentação por Lote\n"
+    "Visualização de Segmentação por Lote\n"
     "[ Original  |  Máscara de Cor  |  Imagem Segmentada (fundo preto) ]",
     fontsize=16, fontweight="bold", color="white", y=0.995
 )
@@ -161,8 +150,6 @@ out_path = os.path.join(GRAFICOS_DIR, "visualizacao_segmentacao.png")
 plt.savefig(out_path, dpi=120, facecolor=fig.get_facecolor())
 plt.close()
 
-print(f"\n  ✓ Mosaico salvo em: {out_path}")
-print(f"\n{'='*60}")
+print(f"\n  [OK] Mosaico salvo em: {out_path}")
 print(f"  Abra o arquivo 'visualizacao_segmentacao.png' para ver")
 print(f"  as imagens originais × máscaras × bois isolados!")
-print(f"{'='*60}\n")

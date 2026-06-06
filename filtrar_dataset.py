@@ -1,5 +1,5 @@
 """
-TCC FEI — Geração do Dataset Filtrado
+Geração do Dataset Filtrado
 Gera dataset_features_leves.csv a partir do dataset completo:
   - Remove lote B3 (dados clonados)
   - Mantém apenas bovinos leves (peso < 250 kg)
@@ -14,7 +14,7 @@ CSV_IN   = os.path.join(SAVE_DIR, "dataset_features_completo.csv")
 CSV_OUT  = os.path.join(SAVE_DIR, "dataset_features_leves.csv")
 
 print("\n" + "="*60)
-print("  TCC FEI — Filtragem do Dataset")
+print("  Filtragem do Dataset")
 print("="*60 + "\n")
 
 if not os.path.exists(CSV_IN):

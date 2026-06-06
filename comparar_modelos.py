@@ -1,5 +1,5 @@
 """
-TCC FEI — Comparação de Todos os Modelos
+Comparação de Todos os Modelos
 Lê os resultados salvos por cada modelo e gera:
   1. Histograma comparativo de MAE, RMSE e R² entre todos os modelos
   2. Gráfico de overfitting (train vs val loss para CNN e MLP)
@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size":14,"axes.titlesize":16,"axes.labelsize":14,"xtick.labelsize":13,"ytick.labelsize":13,"legend.fontsize":12,"figure.titlesize":17})
 import seaborn as sns
 
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +26,7 @@ DPI = 150
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 
 print("\n" + "="*60)
-print("  TCC FEI — Comparação de Todos os Modelos")
+print("  Comparação de Todos os Modelos")
 print("="*60 + "\n")
 
 if not os.path.exists(RESULTS_PATH):
@@ -54,9 +55,7 @@ results = {k: results[k] for k in ORDEM if k in results}
 
 print(f"  Modelos após filtro : {list(results.keys())}\n")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 1. TABELA DE MÉTRICAS
-# ─────────────────────────────────────────────────────────────────────────────
 modelos    = []
 maes       = []
 rmses      = []
@@ -82,9 +81,7 @@ print("  Tabela de Resultados:")
 print(df_res.to_string())
 print()
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 2. GRÁFICO: Comparação de MAE, RMSE e R² (histograma lado a lado)
-# ─────────────────────────────────────────────────────────────────────────────
 COLORS = plt.cm.Set2(np.linspace(0, 1, len(modelos)))
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
@@ -125,11 +122,9 @@ plt.tight_layout()
 out = os.path.join(GRAFICOS_DIR, "comparacao_modelos_regressao.png")
 plt.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=fig.get_facecolor())
 plt.close()
-print("    ✓ comparacao_modelos_regressao.png")
+print("    [OK] comparacao_modelos_regressao.png")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 3. GRÁFICO: Boxplot Comparativo de Erros entre todos os modelos
-# ─────────────────────────────────────────────────────────────────────────────
 PRED_FILES = {
     "Regressão Linear":    "predictions_lr.npy",
     "XGBoost":             "predictions_xgboost.npy",
@@ -177,13 +172,11 @@ if rows:
     out = os.path.join(GRAFICOS_DIR, "comparacao_modelos_boxplot_erros.png")
     plt.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close()
-    print("    ✓ comparacao_modelos_boxplot_erros.png")
+    print("    [OK] comparacao_modelos_boxplot_erros.png")
 else:
     print("    [!] Nenhum arquivo de predições encontrado para o boxplot comparativo.")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 4. GRÁFICO: Overfitting — Train vs Val Loss por época (CNN e MLP)
-# ─────────────────────────────────────────────────────────────────────────────
 modelos_com_historico = {
     nome: m for nome, m in results.items()
     if "train_history" in m and "val_history" in m
@@ -221,7 +214,6 @@ if modelos_com_historico:
             ax.axvline(pior_epoca, color="#E67E22", linestyle=":", linewidth=1.5,
                        label=f"Maior gap: época {pior_epoca}")
         else:
-            print(f"      [Info] {nome} não possui histórico de validação compatível. Plotando apenas treino.")
 
         ax.set_title(f"{nome} — Curva de Loss", fontsize=12, fontweight="bold")
         ax.set_xlabel("Época / Iteração")
@@ -235,10 +227,8 @@ if modelos_com_historico:
     out = os.path.join(GRAFICOS_DIR, "analise_overfitting.png")
     plt.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close()
-    print("    ✓ analise_overfitting.png")
+    print("    [OK] analise_overfitting.png")
 else:
     print("    [!] Nenhum modelo com histórico de épocas encontrado para análise de overfitting.")
 
-print(f"\n{'='*60}")
 print(f"  Gráficos de comparação gerados em: {SAVE_DIR}")
-print(f"{'='*60}\n")

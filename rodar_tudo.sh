@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# TCC FEI — Execução completa (Single-View + Multi-View + Comparação)
+# Execução completa (Single-View + Multi-View + Comparação)
 # Uso: bash rodar_tudo.sh
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -16,17 +16,15 @@ echo "║   Dataset: sem B3, apenas leves (<250kg)                 ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
-# ── 0. Filtrar Dataset ────────────────────────────────────────────────────────
 echo "━━━ [0/9] Filtrando dataset ━━━"
 $PYTHON filtrar_dataset.py
 echo ""
 
-# ── 1. Visualização ───────────────────────────────────────────────────────────
 echo "━━━ [1/9] Visualização das imagens segmentadas ━━━"
 $PYTHON visualizar_segmentacao.py
 echo ""
 
-# ── SINGLE-VIEW ───────────────────────────────────────────────────────────────
+
 echo "━━━ [2/9] Regressão Linear  (~1 min) ━━━"
 $PYTHON train_linear_regression.py
 echo ""
@@ -43,7 +41,7 @@ echo "━━━ [5/9] CNN ResNet18 single-view  (~50 min) ━━━"
 $PYTHON treinar_cnn.py
 echo ""
 
-# ── MULTI-VIEW ────────────────────────────────────────────────────────────────
+
 echo "━━━ [6/9] LR Multi-View  (~1 min) ━━━"
 $PYTHON train_lr_multiview.py
 echo ""
@@ -55,12 +53,12 @@ echo ""
 echo "━━━ [8/9] MLP Multi-View  (~20 min) ━━━"
 $PYTHON train_mlp_multiview.py
 echo ""
-
+    
 echo "━━━ [8/9] CNN Multi-View  (~50 min) ━━━"
 $PYTHON treinar_cnn_multiview.py
 echo ""
 
-# ── COMPARAÇÃO ────────────────────────────────────────────────────────────────
+
 echo "━━━ [9/9] Comparando todos os modelos ━━━"
 $PYTHON comparar_modelos.py
 echo ""

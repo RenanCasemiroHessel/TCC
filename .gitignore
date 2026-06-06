@@ -37,3 +37,12 @@ __pycache__/
 access_token
 kaggle.json
 .kaggle/
+
+# Scripts pessoais/experimentais
+upload_to_kaggle.py
+teste.py
+improve_linear_regression.py
+treinar_cnn_output.log
+
+# PNGs soltos na raiz (duplicados de graficos/)
+cnn_*.png

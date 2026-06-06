@@ -119,7 +119,6 @@ def processar_e_salvar():
     print("="*80 + "\n")
     
     if total_processado > 0:
-        # Calcular o tamanho aproximado da pasta gerada
         total_size = sum(os.path.getsize(f) for f in glob.glob(os.path.join(out_images_dir, "*")))
         print(f"Tamanho total do novo dataset: {total_size / (1024*1024):.2f} MB")
         return True
