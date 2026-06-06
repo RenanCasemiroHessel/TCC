@@ -32,13 +32,16 @@
 | 7 | MLP (pixels) v2 | Single-view | 3.854 × 28 iter = 107.912 passes | 948 | 29,33 | 37,00 | −0,1425 | 0,200 | 34,3% | 0,367 | ✓ duplicata |
 | 8 | CNN ResNet18 — run #1 | Single-view | 3.854 × 40 épocas = 154.160 imgs | — | — | — | — | — | — | — | ✗ CRASH (bug `y_true_cat`, nada salvo) |
 | 9 | CNN ResNet18 — run #2 | Single-view | 3.854 × 15 épocas = 57.810 imgs | 964 | 26,42 | 34,17 | 0,4156 | — | — | — | ✓ salvo, .npy não gerado¹ |
-| 10 | LR Multi-View | Multi-view | 1.917 pares (1 passagem) | 480 | 23,82 | 29,95 | 0,2450 | 0,496 | 41,9% | 0,414 | ✓ salvo |
-| 11 | XGBoost Multi-View | Multi-view | 1.917 pares (1 passagem) | 480 | 23,84 | 29,93 | 0,2459 | 0,497 | 42,3% | 0,355 | ✓ salvo |
-| 12 | MLP Multi-View | Multi-view | 1.917 × 52 iter = 99.684 passes | 471 | 29,04 | 37,69 | −0,2334 | 0,310 | 34,8% | 0,437 | ✓ salvo |
-| 13 | CNN Multi-View v1 | Multi-view | 1.917 × 15 épocas = 28.755 pares | 480 | 24,48 | 29,92 | 0,2206 | 0,603 | 39,0% | 0,260 | ✓ salvo (sem aug) |
-| 14 | CNN Multi-View — run #2 | Multi-view | — | — | — | — | — | — | — | — | ✗ CRASH (bug `AUG_MULTIPLIER`) |
-| 15 | CNN Multi-View v2 | Multi-view | 1.917 × 4 × 6 épocas = 46.008 pares | 480 | 21,06 | 26,43 | 0,3918 | 0,663 | 46,7% | 0,499 | ✓ salvo (4× aug) |
-| **16** | **CNN Multi-View v3 ★** | **Multi-view** | **1.917 × 4 × 30 épocas = 230.040 pares** | **480** | **20,75** | **26,09** | **0,4072** | **0,667** | **48,1%** | **0,503** | **✓ salvo (4× aug)** |
+| 10 | CNN ResNet18 v2 | Single-view | 3.854 × 15 épocas = 57.810 imgs | 964 | 21,27 | 27,23 | 0,3527 | 0,600 | — | — | ✓ salvo |
+| 11 | CNN ResNet18 v3 | Single-view | 3.854 × 15 épocas = 57.810 imgs | 964 | 21,28 | 27,28 | 0,3501 | 0,597 | — | — | ✓ salvo |
+| 12 | CNN ResNet18 v4 | Single-view | 3.854 × 30 épocas = 115.620 imgs| 964 | 20,95 | 26,82 | 0,3718 | 0,615 | — | — | ✓ salvo |
+| 13 | LR Multi-View | Multi-view | 1.917 pares (1 passagem) | 480 | 23,82 | 29,95 | 0,2450 | 0,496 | 41,9% | 0,414 | ✓ salvo |
+| 14 | XGBoost Multi-View | Multi-view | 1.917 pares (1 passagem) | 480 | 23,84 | 29,93 | 0,2459 | 0,497 | 42,3% | 0,355 | ✓ salvo |
+| 15 | MLP Multi-View | Multi-view | 1.917 × 52 iter = 99.684 passes | 471 | 29,04 | 37,69 | −0,2334 | 0,310 | 34,8% | 0,437 | ✓ salvo |
+| 16 | CNN Multi-View v1 | Multi-view | 1.917 × 15 épocas = 28.755 pares | 480 | 24,48 | 29,92 | 0,2206 | 0,603 | 39,0% | 0,260 | ✓ salvo (sem aug) |
+| 17 | CNN Multi-View — run #2 | Multi-view | — | — | — | — | — | — | — | — | ✗ CRASH (bug `AUG_MULTIPLIER`) |
+| 18 | CNN Multi-View v2 | Multi-view | 1.917 × 4 × 6 épocas = 46.008 pares | 480 | 21,06 | 26,43 | 0,3918 | 0,663 | 46,7% | 0,499 | ✓ salvo (4× aug) |
+| **19** | **CNN Multi-View v3 ★** | **Multi-view** | **1.917 × 4 × 30 épocas = 230.040 pares** | **480** | **20,75** | **26,09** | **0,4072** | **0,667** | **48,1%** | **0,503** | **✓ salvo (4× aug)** |
 
 > ★ Melhor resultado geral.  
 > ¹ Arquivo `.npy` de predições não gerado nessa run — acurácia e F1 não calculáveis. A CNN single-view run #2 terá esses valores quando for re-executada.  
@@ -109,14 +112,14 @@
 - **Imagens analisadas:** 4.818 (3.854 treino / 964 validação — batch_size=32)
 - **Salva melhor checkpoint** (menor val loss durante treino)
 
-| Métrica     | Valor        |
+| Métrica     | Valor (v4)   |
 |-------------|--------------|
-| MAE         | 26,42 kg     |
-| RMSE        | 34,17 kg     |
-| R²          | 0,4156       |
-| Pearson r   | — (run antiga sem registro) |
+| MAE         | 20,95 kg     |
+| RMSE        | 26,82 kg     |
+| R²          | 0,3718       |
+| Pearson r   | 0,615        |
 
-> Nota: esta run usa configuração anterior (sem delta normalizado no HuberLoss). Uma re-run com configuração atualizada pode ser superior.
+> Nota: A última execução (v4) alcançou uma performance muito superior à v2 original, reduzindo o erro de 26,42 kg para 20,95 kg, utilizando a nova configuração completa de augmentação.
 
 ---
 
@@ -241,9 +244,10 @@
 | Run | Épocas | Config | MAE (kg) | RMSE (kg) | R²     | Pearson r | Tempo aprox. | Observação |
 |-----|--------|--------|----------|-----------|--------|-----------|--------------|------------|
 | #1 (crash) | 40 | antiga | — | — | — | — | ~2,3 h | Crash no plot após treino. **Nenhum resultado salvo.** Bug: `y_true_cat` não definido. Treino chegou até época 40 completa mas crash impediu salvamento. |
-| #2 ✓ | 15 | nova | 26,42 | 34,17 | 0,4156 | — | ~15 min | Configuração corrigida: HuberLoss delta normalizado, Dropout 0.5, augmentação melhorada. **Resultado salvo.** Pearson r não registrado nessa run. |
-
-> Run #3 (single-view com config nova completa) ainda não foi executada.
+| #2 ✓ | 15 | nova | 26,42 | 34,17 | 0,4156 | — | ~15 min | Configuração corrigida: HuberLoss delta normalizado, Dropout 0.5, augmentação melhorada. **Resultado salvo.** |
+| #3 ✓ (v2) | 15 | nova | 21,27 | 27,23 | 0,3527 | 0,600 | ~15 min | Re-execução salva com `predictions_cnn_v2.npy`. |
+| #4 ✓ (v3) | 15 | nova | 21,28 | 27,28 | 0,3501 | 0,597 | ~15 min | Re-execução idêntica (v3). |
+| #5 ✓ (v4) | 30 | nova completa | 20,95 | 26,82 | 0,3718 | 0,615 | ~30 min | **Melhor resultado single-view**. Rodado por 30 épocas, alcançou MAE muito próximo da rede multi-view. |
 
 ---
 
@@ -260,11 +264,11 @@
 
 ## Resumo Final
 
-- **Melhor MAE:** CNN Multi-View v3 → **20,75 kg**
+- **Melhor MAE:** CNN Multi-View v3 → **20,75 kg** (CNN Single-View v4 chegou a 20,95 kg)
 - **Melhor R²:** CNN Multi-View v3 → **0,4072**
 - **Melhor modelo clássico:** LR Multi-View e XGBoost Multi-View (empatados — MAE ~23,8 kg)
 - **Pior modelo:** MLP Multi-View (R² negativo — pior que média)
-- **Ganho da CNN multi-view vs. single-view:** −5,67 kg MAE (−21%)
+- **Ganho da CNN multi-view vs. melhor single-view:** −0,20 kg MAE (−0,9%)
 
 ### Por que multi-view CNN ganhou?
 1. Usa informação de dois ângulos (lateral + traseiro) simultaneamente
