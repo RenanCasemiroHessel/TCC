@@ -20,7 +20,6 @@ import torch
 import torch.nn as nn
 from torchvision import models, transforms
 
-# CONFIG (deve bater com o treinar_cnn.py)
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
@@ -34,10 +33,8 @@ SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
 MODELO_PADRAO = os.path.join(SCRIPT_DIR, "resnet18_gado_segmentado.pth")
 YOLO_PATH     = os.path.join(SCRIPT_DIR, "yolo11n-seg.pt")
 
-# Classe "cow" no COCO (usada pelo modelo YOLO pré-treinado)
 COCO_COW_CLASS = 19
 
-# FUNÇÕES
 
 def carregar_modelo(caminho_pth: str, device: torch.device):
     if not os.path.exists(caminho_pth):
@@ -84,7 +81,6 @@ def aplicar_yolo_mascara(img_path: str) -> Image.Image:
     results = yolo(img_path, conf=0.3, classes=[COCO_COW_CLASS], verbose=False)
 
     if results and results[0].masks is not None and len(results[0].masks) > 0:
-        # Combinar todas as máscaras detectadas (caso tenha mais de um boi)
         combined_mask = np.zeros((h, w), dtype=bool)
         for mask_tensor in results[0].masks.data:
             mask_bin = mask_tensor.cpu().numpy()
@@ -99,7 +95,6 @@ def aplicar_yolo_mascara(img_path: str) -> Image.Image:
               f"({combined_mask.sum()} pixels de boi)")
         return Image.fromarray(masked_img)
 
-    # Fallback: tenta segmentação por cor (estrutura images/annotations do dataset)
     dirname, filename = os.path.split(img_path)
     parent_dir, last_dir = os.path.split(dirname)
     if last_dir == "images":
@@ -110,7 +105,6 @@ def aplicar_yolo_mascara(img_path: str) -> Image.Image:
             if mask_np.shape[-1] == 3:
                 alpha   = np.full((*mask_np.shape[:2], 1), 255, dtype=np.uint8)
                 mask_np = np.concatenate([mask_np, alpha], axis=-1)
-            # Detecta cor dominante (B2=verde, B4=magenta)
             verde   = np.array([0, 255, 0, 255])
             magenta = np.array([255, 30, 249, 255])
             for cor_alvo in [verde, magenta]:
@@ -141,11 +135,9 @@ def predizer(img_path: str, modelo_pth: str):
     print(f"  Imagem      : {os.path.basename(img_path)}")
     print(f"{'='*55}\n")
 
-    # 1. Carregar modelo
     print("  Carregando modelo ...")
     model, y_min, y_max, img_size = carregar_modelo(modelo_pth, device)
 
-    # 2. Segmentação automática com YOLO
     print("  Segmentando boi (YOLO automático) ...")
     if not os.path.exists(img_path):
         print(f"\n[ERRO] Imagem não encontrada: {img_path}")
@@ -160,7 +152,6 @@ def predizer(img_path: str, modelo_pth: str):
     ])
     tensor = transform(img_segmentada).unsqueeze(0).to(device)
 
-    # 3. Inferência
     print("  Realizando predição ...")
     with torch.no_grad():
         saida_norm = model(tensor).squeeze().item()
@@ -177,7 +168,6 @@ def predizer(img_path: str, modelo_pth: str):
 
     return peso_kg
 
-# ENTRADA
 
 def pedir_imagem() -> str:
     while True:

@@ -29,7 +29,6 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 import kagglehub
 
-# CONFIG
 SEED           = 42
 IMG_SIZE       = 224
 BATCH_SIZE     = 16      # 2 imagens por amostra → metade do batch single-view
@@ -58,7 +57,6 @@ print(f"  Épocas     : {NUM_EPOCHS}")
 print(f"  Batch size : {BATCH_SIZE}")
 print(f"  IMG_SIZE   : {IMG_SIZE}x{IMG_SIZE}")
 
-# 1. SCAN DO DATASET — coleta pares (lateral, traseira) por animal
 print("Escaneando dataset e montando pares side+rear ...")
 
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
@@ -122,7 +120,6 @@ for root, dirs, files in os.walk(base_dir):
         elif is_rear and key not in rears:
             rears[key] = entry
 
-# Montar DataFrame de pares
 rows = []
 for key in sides:
     if key in rears:
@@ -138,7 +135,6 @@ for key in sides:
 
 df = pd.DataFrame(rows)
 
-# ── Log detalhado do dataset ──────────────────────────────────────────────────
 total_imagens = len(df) * 2  # side + rear por par
 lotes_count   = df["lote"].value_counts().to_dict()
 print(f"""
@@ -154,7 +150,6 @@ print(f"""
 if SAMPLE_FRAC < 1.0:
     df = df.sample(frac=SAMPLE_FRAC, random_state=SEED).reset_index(drop=True)
 
-# 2. SPLIT 80/20 POR ANIMAL (sem data leakage)
 print("\nDividindo dados por animal (80/20) ...")
 
 keys = df["key"].tolist()
@@ -163,7 +158,6 @@ train_keys, val_keys = train_test_split(keys, test_size=0.2, random_state=SEED)
 train_df = df[df["key"].isin(train_keys)].reset_index(drop=True)
 val_df   = df[df["key"].isin(val_keys)].reset_index(drop=True)
 
-# 3. DATASET E TRANSFORMS
 train_transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.RandomHorizontalFlip(),
@@ -217,7 +211,6 @@ class MultiViewDataset(Dataset):
 train_dataset_base = MultiViewDataset(train_df, train_transform)
 val_dataset        = MultiViewDataset(val_df,   val_transform)
 
-# ConcatDataset: cada cópia vê augmentações aleatórias diferentes → sem custo em disco
 from torch.utils.data import ConcatDataset
 train_dataset = ConcatDataset([train_dataset_base] * AUG_MULTIPLIER)
 
@@ -228,7 +221,6 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
 val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False,
                           num_workers=4, pin_memory=torch.cuda.is_available())
 
-# 4. MODELO — ResNet18 Siamesa (backbone compartilhado)
 print("\nConstruindo modelo (ResNet18 Siamesa) ...")
 
 train_weights = train_df["weight"].values
@@ -263,7 +255,6 @@ class SiameseResNet(nn.Module):
 
 model = SiameseResNet().to(DEVICE)
 
-# Fase 1: congelar backbone
 for name, param in model.named_parameters():
     if "backbone" in name:
         param.requires_grad = False
@@ -278,7 +269,6 @@ scheduler   = torch.optim.lr_scheduler.CosineAnnealingLR(
     optimizer, T_max=NUM_EPOCHS, eta_min=1e-6
 )
 
-# 5. LOOP DE TREINO
 print(f"\nIniciando treino por {NUM_EPOCHS} épocas ...")
 print(f"      Épocas 1-{FINETUNE_EPOCH-1}: só cabeça | Época {FINETUNE_EPOCH}+: backbone descongelado\n")
 
@@ -299,7 +289,6 @@ for epoch in range(1, NUM_EPOCHS + 1):
         optimizer = Adam(model.parameters(), lr=LEARNING_RATE * 0.1, weight_decay=1e-4)
         print(f"  [Época {epoch}] Backbone DESCONGELADO — LR={LEARNING_RATE * 0.1:.6f}\n")
 
-    # ── Treino ──
     model.train()
     running = 0.0
     for side, rear, weights in train_loader:
@@ -313,7 +302,6 @@ for epoch in range(1, NUM_EPOCHS + 1):
         running += loss.item() * side.size(0)
     train_loss = running / len(train_dataset)
 
-    # ── Validação ──
     model.eval()
     val_run = 0.0
     with torch.no_grad():
@@ -346,7 +334,6 @@ for epoch in range(1, NUM_EPOCHS + 1):
 
 print(f"\n  Melhor modelo: época {best_epoch} | Val Loss: {best_val_loss:.6f}")
 
-# 6. AVALIAÇÃO FINAL (usando melhor checkpoint)
 print("\nCalculando métricas finais ...")
 
 checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
@@ -384,11 +371,9 @@ print(f"""
     print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# 7. GRÁFICOS
 print("  Gerando gráficos ...\n")
 DPI = 150
 
-# 7.1 Curva de Loss
 fig, ax = plt.subplots(figsize=(9, 5))
 ep = range(1, NUM_EPOCHS + 1)
 ax.plot(ep, history["train_loss"], "o-", color="#2563EB", linewidth=2.5, markersize=6, label="Treino")
@@ -402,7 +387,6 @@ fig.savefig(os.path.join(GRAFICOS_DIR, "cnn_multiview_curva_loss.png"), dpi=DPI)
 plt.close(fig)
 print("  [OK] cnn_multiview_curva_loss.png")
 
-# 7.2 Scatter Real × Predito
 fig, ax = plt.subplots(figsize=(8, 8))
 lims = [min(y_true.min(), y_pred.min()) - 10, max(y_true.max(), y_pred.max()) + 10]
 ax.scatter(y_true, y_pred, alpha=0.45, s=18, color="#7C3AED", edgecolors="none")
@@ -416,7 +400,6 @@ fig.savefig(os.path.join(GRAFICOS_DIR, "cnn_multiview_dispersao_r2.png"), dpi=DP
 plt.close(fig)
 print("  [OK] cnn_multiview_dispersao_r2.png")
 
-# 7.3 Histograma de Erros
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.hist(errors, bins=50, color="#7C3AED", edgecolor="white", alpha=0.85)
 ax.axvline(0, color="black", linewidth=1.8, linestyle="--", label="Erro = 0")
@@ -430,7 +413,6 @@ fig.savefig(os.path.join(GRAFICOS_DIR, "cnn_multiview_histograma_erros.png"), dp
 plt.close(fig)
 print("  [OK] cnn_multiview_histograma_erros.png")
 
-# 7.4 Correlação Linear
 fig, ax = plt.subplots(figsize=(8, 7))
 ax.scatter(y_true, y_pred, alpha=0.4, s=18, color="#7C3AED", edgecolors="none", label="Amostras")
 coef  = np.polyfit(y_true, y_pred, 1)
@@ -447,7 +429,6 @@ fig.savefig(os.path.join(GRAFICOS_DIR, "cnn_multiview_correlacao_linear.png"), d
 plt.close(fig)
 print("  [OK] cnn_multiview_correlacao_linear.png")
 
-# 8. SALVAR RESULTADOS
 RESULTS_PATH = os.path.join(SAVE_DIR, "resultados_modelos.json")
 np.save(safe_path(os.path.join(SAVE_DIR, "predictions_cnn_multiview.npy")), np.array([y_true, y_pred]))
 salvar_json(RESULTS_PATH, "CNN Multi-View", {

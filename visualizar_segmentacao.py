@@ -17,7 +17,6 @@ import matplotlib.gridspec as gridspec
 from PIL import Image
 import kagglehub
 
-# CONFIG
 AMOSTRAS_POR_LOTE = 3   # quantas imagens mostrar por lote
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
@@ -27,7 +26,6 @@ print("\n" + "="*60)
 print("  Visualização de Segmentação por Lote")
 print("="*60 + "\n")
 
-# LOCALIZAR DATASET
 print("Localizando dataset via kagglehub ...")
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
@@ -38,7 +36,6 @@ pastas_lote = {
     "B4 (Magenta)":    (os.path.join(base_dir, "B4", "Side"), np.array([255, 30, 249, 255])),
 }
 
-# COLETAR AMOSTRAS
 print("Coletando amostras de cada lote ...")
 
 amostras = {}   # lote -> lista de (img_np, mask_np, seg_np, peso, img_file)
@@ -76,7 +73,6 @@ for lote_nome, (pasta, cor_alvo) in pastas_lote.items():
             seg_np      = img_np.copy()
             seg_np[~bovino_mask] = 0
 
-            # Extrair peso do nome do arquivo
             lote_key = lote_nome.split(" ")[0]
             partes = img_file.replace(".jpg", "").split("_")
             try:
@@ -85,7 +81,6 @@ for lote_nome, (pasta, cor_alvo) in pastas_lote.items():
             except Exception:
                 peso = 0.0
 
-            # Redimensionar para visualização (preservando aspecto)
             h, w = img_np.shape[:2]
             scale   = 400 / max(h, w)
             new_h, new_w = int(h * scale), int(w * scale)

@@ -7,24 +7,19 @@ def check_and_authenticate():
     try:
         from kaggle.api.kaggle_api_extended import KaggleApi
         
-        # Instancia e autentica a API do Kaggle
         api = KaggleApi()
         api.authenticate()
         
-        # Recupera o username configurado automaticamente pelo cliente
         username = api.config_values.get('username')
         if username:
             return api, username
             
-        # Caso alternativo se o username nao estiver em config_values
-        # Tentamos ler diretamente do kaggle.json caso ele exista
         kaggle_json = os.path.expanduser("~/.kaggle/kaggle.json")
         if os.path.exists(kaggle_json):
             with open(kaggle_json, 'r', encoding='utf-8') as f:
                 creds = json.load(f)
                 return api, creds.get("username")
                 
-        # Se nao achou o username mas autenticou, usa um default/detectado
         return api, "renanhessel"
         
     except Exception as e:
@@ -44,7 +39,6 @@ def main():
         
     print(f"Usuario autenticado com sucesso: {username}")
     
-    # Determina dinamicamente qual pasta enviar (prioriza a leve pré-processada)
     if os.path.exists("data_kaggle"):
         upload_dir = "data_kaggle"
         dataset_slug = "bmgf-livestock-weight-cv-preprocessed"
@@ -59,7 +53,6 @@ def main():
         print("[ERRO] Nenhuma pasta de dados ('data_kaggle' ou 'data') foi encontrada no diretório atual.")
         sys.exit(1)
         
-    # Inicializando metadados do Dataset no formato correto do Kaggle
     metadata_path = os.path.join(upload_dir, "dataset-metadata.json")
     
     metadata = {
@@ -72,7 +65,6 @@ def main():
         ]
     }
     
-    # Salvando dataset-metadata.json dentro da pasta
     with open(metadata_path, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=4)
     print(f"Arquivo de metadados gerado com sucesso em: {metadata_path}")
@@ -82,9 +74,7 @@ def main():
     print("Por favor, deixe o terminal aberto!")
     print("="*80 + "\n")
     
-    # Iniciando o upload
     try:
-        # Envia o dataset como PRIVADO (public=False)
         print(f"Enviando dados da pasta '{upload_dir}' para os servidores do Kaggle...")
         start_time = time.time()
         api.dataset_create_new(

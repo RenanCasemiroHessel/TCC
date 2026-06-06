@@ -11,7 +11,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 
-# Configuração de dispositivo (GPU se disponível, senão CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class CattleWeightDataset(Dataset):
@@ -23,13 +22,8 @@ class CattleWeightDataset(Dataset):
         print("Mapeando pesos a partir dos nomes dos arquivos...")
         for path in image_paths:
             basename = os.path.basename(path)
-            # Exemplo: 1.0_r_117_10.0_F.jpg___fuse.png -> peso = 117
             try:
                 parts = basename.split('_')
-                # Procura a terceira parte que geralmente é o peso, ou ajusta conforme necessidade
-                # Pode haver variação entre B2/B3/B4. 
-                # B2/B3: id_vista_peso_sufixo. B4: id_batch-sub_vista_peso_sexo_sufixo
-                # Nos arquivos listados, o formato era X.X_r_PESO_...
                 peso_str = parts[2]
                 peso = float(peso_str)
                 if 50 <= peso <= 1000: # Filtro de sanidade
@@ -54,22 +48,16 @@ class CattleWeightDataset(Dataset):
 def main():
     data_dir = os.path.join("data", "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV")
     
-    # Busca todas as imagens recursivamente (neste caso os fuses/images)
     print("Buscando imagens nas pastas...")
     all_images = glob.glob(os.path.join(data_dir, "**", "*.png"), recursive=True) + \
                  glob.glob(os.path.join(data_dir, "**", "*.jpg"), recursive=True)
                  
-    # Para o teste não demorar horas na CPU, vamos limitar a uma amostragem aleatória se necessário
-    # Para o treinamento completo, utilizamos todas as imagens encontradas.
-    # np.random.shuffle(all_images)
-    # all_images = all_images[:1000] 
 
     
     if len(all_images) == 0:
         print("Nenhuma imagem encontrada na pasta data.")
         return
         
-    # Transformações necessárias para a ResNet (Redimensionamento para 128x128 para poupar RAM/Tempo)
     transform = transforms.Compose([
         transforms.Resize((128, 128)),
         transforms.ToTensor(),
@@ -82,11 +70,9 @@ def main():
          print("Nenhum peso válido extraído. Verifique o formato dos arquivos.")
          return
          
-    # Extrair listas para split
     img_paths = [x[0] for x in dataset.data]
     weights = [x[1] for x in dataset.data]
     
-    # Split
     X_train_paths, X_test_paths, y_train, y_test = train_test_split(img_paths, weights, test_size=0.2, random_state=42)
     
     train_dataset = CattleWeightDataset(X_train_paths, transform=transform)
@@ -98,9 +84,7 @@ def main():
     print(f"\nTreinando com {len(train_dataset)} imagens, testando com {len(test_dataset)} imagens.")
     print(f"Usando processador/placa de vídeo: {device}")
     
-    # Construção do Modelo (Transfer Learning)
     model = models.resnet18(pretrained=True)
-    # Substituir a última camada que prevê 1000 classes por 1 neurônio (Regressão Linear do peso)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 1)
     
@@ -158,11 +142,9 @@ def main():
     print(f"RMSE: {rmse:.2f} kg")
     print(f"R^2: {r2:.4f}")
     
-    # Salvar o modelo
     torch.save(model.state_dict(), "resnet18_pesogado.pth")
     print("Modelo salvo como 'resnet18_pesogado.pth'")
     
-    # Atualizar o arquivo de resultados automaticamente
     with open("resultados_experimentos.md", "a", encoding="utf-8") as f:
         f.write("\n\n## 7. Deep Learning - CNN ResNet-18 (Treinamento Completo)\n")
         f.write("**Data/Hora:** Automático (Fim do script `train_cnn.py`)\n")

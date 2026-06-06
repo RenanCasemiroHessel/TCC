@@ -5,7 +5,6 @@ import shutil
 from PIL import Image
 import sys
 
-# Mapeamento de cores da máscara por lote (conforme visualizar.py)
 COR_BOVINO = {
     "B2": np.array([0, 255, 0, 255]),
     "B3": np.array([255, 30, 249, 255]),
@@ -71,36 +70,28 @@ def processar_e_salvar():
                 continue
                 
             try:
-                # 1. Carregar Imagem e Máscara
                 img_path = os.path.join(pasta_imgs, img_file)
                 img_pil = Image.open(img_path).convert("RGB")
                 mask_pil = Image.open(mask_path)
                 
-                # Converter para numpy para processar pixels
                 img_np = np.array(img_pil)
                 mask_np = np.array(mask_pil)
                 
-                # Ajustar canais da máscara caso não tenha canal Alpha
                 if mask_np.shape[-1] == 3:
                     alpha = np.full((*mask_np.shape[:2], 1), 255, dtype=np.uint8)
                     mask_np = np.concatenate([mask_np, alpha], axis=-1)
                     
-                # 2. Criar máscara binária do boi
                 bovino_mask = np.all(mask_np == cor_alvo, axis=-1)
                 
                 if bovino_mask.sum() == 0:
                     continue
                     
-                # 3. Aplicar fundo preto (isolar boi)
                 masked_img = img_np.copy()
                 masked_img[~bovino_mask] = 0 # Define tudo que não for boi como preto (0)
                 
-                # 4. Redimensionar para 224x224 (Padrão ideal para CNNs)
                 masked_pil = Image.fromarray(masked_img)
                 resized_pil = masked_pil.resize((224, 224), Image.Resampling.LANCZOS)
                 
-                # 5. Salvar na pasta final com nomenclatura limpa
-                # Nome: LOTE_PESO_NOMEORIGINAL.png
                 novo_nome = f"{lote}_{int(peso)}_{img_file.replace('.jpg', '')}.png"
                 resized_pil.save(os.path.join(out_images_dir, novo_nome))
                 

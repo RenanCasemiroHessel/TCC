@@ -31,7 +31,6 @@ CSV_PATH = os.path.join(SAVE_DIR, "dataset_features_leves.csv")
 
 print(f"  XGBoost Multi-View")
 
-# ─── 1. Carregar e parear ─────────────────────────────────────────────────────
 print("Carregando e pareando features side+rear ...")
 df = pd.read_csv(CSV_PATH)
 
@@ -67,11 +66,9 @@ features = (
 X = df_paired[features].values
 y = df_paired["peso_kg"].values
 
-# ─── 2. Split 80/20 ──────────────────────────────────────────────────────────
 print("Dividindo dados (80/20) ...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
 
-# ─── 3. Treino XGBoost ───────────────────────────────────────────────────────
 print("Treinando XGBoost Multi-View ...")
 model = xgb.XGBRegressor(
     **BEST_PARAMS, random_state=SEED,
@@ -101,12 +98,10 @@ print(f"""
     print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# ─── 4. Gráficos ─────────────────────────────────────────────────────────────
 print("Gerando gráficos ...")
 DPI    = 150
 errors = y_pred - y_test
 
-# Curva RMSE por árvore
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(train_rmse, color="#4A90D9", linewidth=2, label="RMSE Treino")
 ax.plot(val_rmse,   color="#E74C3C", linewidth=2, linestyle="--", label="RMSE Validação")
@@ -118,7 +113,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_curva_loss.png"), dpi=
 plt.close()
 print("    [OK] xgboost_multiview_curva_loss.png")
 
-# Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
 lim = [min(y_test.min(), y_pred.min()) - 10, max(y_test.max(), y_pred.max()) + 10]
 ax.scatter(y_test, y_pred, alpha=0.5, color="#27AE60", edgecolors="white", linewidths=0.4, s=40)
@@ -132,7 +126,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_dispersao_r2.png"), dp
 plt.close()
 print("    [OK] xgboost_multiview_dispersao_r2.png")
 
-# Histograma de erros
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.hist(errors, bins=40, color="#27AE60", edgecolor="white", alpha=0.85)
 ax.axvline(0, color="red", linestyle="--", linewidth=1.5)
@@ -144,7 +137,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_histograma_erros.png")
 plt.close()
 print("    [OK] xgboost_multiview_histograma_erros.png")
 
-# Feature importance
 fig, ax = plt.subplots(figsize=(10, 6))
 importances = model.feature_importances_
 sorted_idx  = np.argsort(importances)

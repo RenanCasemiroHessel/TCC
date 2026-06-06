@@ -40,13 +40,10 @@ with open(RESULTS_PATH, "r") as f:
 
 print(f"  Modelos encontrados: {list(results.keys())}\n")
 
-# ── Filtro e reordenação dos modelos ─────────────────────────────────────────
-# Remove XGBoost não-tuned caso exista; renomeia XGBoost (Tuned) → XGBoost
 results.pop("XGBoost", None) if "XGBoost (Tuned)" in results else None
 if "XGBoost (Tuned)" in results:
     results["XGBoost"] = results.pop("XGBoost (Tuned)")
 
-# Garante ordem: single-view primeiro, depois multi-view
 ORDEM = [
     "Regressão Linear", "XGBoost", "MLP (pixels)", "CNN (ResNet18)",
     "LR Multi-View", "XGBoost Multi-View", "MLP Multi-View", "CNN Multi-View",
@@ -55,7 +52,6 @@ results = {k: results[k] for k in ORDEM if k in results}
 
 print(f"  Modelos após filtro : {list(results.keys())}\n")
 
-# 1. TABELA DE MÉTRICAS
 modelos    = []
 maes       = []
 rmses      = []
@@ -81,13 +77,11 @@ print("  Tabela de Resultados:")
 print(df_res.to_string())
 print()
 
-# 2. GRÁFICO: Comparação de MAE, RMSE e R² (histograma lado a lado)
 COLORS = plt.cm.Set2(np.linspace(0, 1, len(modelos)))
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 fig.patch.set_facecolor("#F8F9FA")
 
-# MAE
 axes[0].bar(modelos, maes, color=COLORS, edgecolor="white", linewidth=1.2)
 axes[0].set_title("MAE — Erro Absoluto Médio", fontsize=13, fontweight="bold")
 axes[0].set_ylabel("kg")
@@ -96,7 +90,6 @@ for i, v in enumerate(maes):
     axes[0].text(i, v + 0.5, f"{v:.1f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
 axes[0].grid(True, alpha=0.3, axis="y")
 
-# RMSE
 axes[1].bar(modelos, rmses, color=COLORS, edgecolor="white", linewidth=1.2)
 axes[1].set_title("RMSE — Raiz do Erro Quadrático", fontsize=13, fontweight="bold")
 axes[1].set_ylabel("kg")
@@ -105,7 +98,6 @@ for i, v in enumerate(rmses):
     axes[1].text(i, v + 0.5, f"{v:.1f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
 axes[1].grid(True, alpha=0.3, axis="y")
 
-# R²
 axes[2].bar(modelos, r2s, color=COLORS, edgecolor="white", linewidth=1.2)
 axes[2].set_title("R² — Coeficiente de Determinação", fontsize=13, fontweight="bold")
 axes[2].set_ylabel("R²")
@@ -124,7 +116,6 @@ plt.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=fig.get_facecolor())
 plt.close()
 print("    [OK] comparacao_modelos_regressao.png")
 
-# 3. GRÁFICO: Boxplot Comparativo de Erros entre todos os modelos
 PRED_FILES = {
     "Regressão Linear":    "predictions_lr.npy",
     "XGBoost":             "predictions_xgboost.npy",
@@ -176,7 +167,6 @@ if rows:
 else:
     print("    [!] Nenhum arquivo de predições encontrado para o boxplot comparativo.")
 
-# 4. GRÁFICO: Overfitting — Train vs Val Loss por época (CNN e MLP)
 modelos_com_historico = {
     nome: m for nome, m in results.items()
     if "train_history" in m and "val_history" in m
@@ -200,7 +190,6 @@ if modelos_com_historico:
             ax.plot(epochs, val_h,   color="#E74C3C", linewidth=2, marker="s", markersize=4,
                     linestyle="--", label="Loss Validação")
 
-            # Sombra de diferença (overfitting gap)
             ax.fill_between(epochs, train_h, val_h,
                             where=[v > t for t, v in zip(train_h, val_h)],
                             alpha=0.15, color="#E74C3C", label="Overfitting")
@@ -208,7 +197,6 @@ if modelos_com_historico:
                             where=[v <= t for t, v in zip(train_h, val_h)],
                             alpha=0.15, color="#2ECC71", label="Underfitting")
 
-            # Detectar ponto de maior overfitting
             gaps = [abs(v - t) for t, v in zip(train_h, val_h)]
             pior_epoca = gaps.index(max(gaps)) + 1
             ax.axvline(pior_epoca, color="#E67E22", linestyle=":", linewidth=1.5,

@@ -33,7 +33,6 @@ os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
 print(f"  MLP Multi-View (side + rear pixels)")
 
-# ─── 1. Scan e pareamento de imagens ─────────────────────────────────────────
 print("Escaneando dataset e montando pares side+rear ...")
 
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
@@ -98,7 +97,6 @@ for root, dirs, files in os.walk(base_dir):
 
 pairs = [(k, sides[k], rears[k]) for k in sides if k in rears]
 
-# ─── 2. Extrair pixels (com cache) ───────────────────────────────────────────
 print("\nExtraindo pixels side+rear (cache) ...")
 CACHE_X = os.path.join(SAVE_DIR, f"mlp_multiview_cache_X_{IMG_SIZE}.npy")
 CACHE_Y = os.path.join(SAVE_DIR, f"mlp_multiview_cache_y_{IMG_SIZE}.npy")
@@ -123,7 +121,6 @@ else:
         try:
             side_px = segmentar(side_entry["img"], side_entry["mask"], side_entry["cor"])
             rear_px = segmentar(rear_entry["img"], rear_entry["mask"], rear_entry["cor"])
-            # Concatenar pixels de ambas as vistas
             combined = np.concatenate([
                 side_px.flatten().astype(np.float32) / 255.0,
                 rear_px.flatten().astype(np.float32) / 255.0,
@@ -137,7 +134,6 @@ else:
     np.save(CACHE_X, X)
     np.save(CACHE_Y, y)
 
-# ─── 3. Split + PCA ──────────────────────────────────────────────────────────
 print("\nSplit 80/20 + PCA ...")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=SEED)
 
@@ -149,7 +145,6 @@ pca     = PCA(n_components=256, random_state=SEED)
 X_train = pca.fit_transform(X_train)
 X_test  = pca.transform(X_test)
 
-# ─── 4. Treino MLP ───────────────────────────────────────────────────────────
 print("\nTreinando MLP ...")
 
 mlp = MLPRegressor(
@@ -183,12 +178,10 @@ print(f"""
     print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# ─── 5. Gráficos ─────────────────────────────────────────────────────────────
 print("Gerando gráficos ...")
 DPI    = 150
 errors = y_pred - y_test
 
-# Curva de loss
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(mlp.loss_curve_, color="#4A90D9", linewidth=2, label="Loss Treino")
 ax.set_title("MLP Multi-View — Curva de Loss", fontsize=13, fontweight="bold")
@@ -199,7 +192,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_multiview_curva_loss.png"), dpi=DPI)
 plt.close()
 print("    [OK] mlp_multiview_curva_loss.png")
 
-# Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
 lim = [min(y_test.min(), y_pred.min()) - 10, max(y_test.max(), y_pred.max()) + 10]
 ax.scatter(y_test, y_pred, alpha=0.5, color="#4A90D9", edgecolors="white", linewidths=0.4, s=40)
@@ -213,7 +205,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_multiview_dispersao_r2.png"), dpi=DP
 plt.close()
 print("    [OK] mlp_multiview_dispersao_r2.png")
 
-# Histograma de erros
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.hist(errors, bins=40, color="#4A90D9", edgecolor="white", alpha=0.85)
 ax.axvline(0, color="red", linestyle="--", linewidth=1.5)

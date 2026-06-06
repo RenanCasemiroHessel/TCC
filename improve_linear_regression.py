@@ -28,13 +28,10 @@ def main():
     print("Carregando dados...")
     df = pd.read_csv(csv_path)
     
-    # Passo 1: Remoção de Outliers no Peso
     df = remove_outliers_iqr(df, 'peso_kg')
     
-    # Aplicando One-Hot Encoding nas colunas categóricas (sexo e vista)
     df_encoded = pd.get_dummies(df, columns=['sexo', 'vista'], drop_first=True)
     
-    # Convertendo colunas booleanas resultantes do get_dummies para float
     for col in ['sexo_M', 'vista_side']:
         if col in df_encoded.columns:
             df_encoded[col] = df_encoded[col].astype(float)
@@ -50,21 +47,17 @@ def main():
     X = df_encoded[features]
     y = df_encoded[target]
     
-    # Passo 2: Engenharia de Features (PolynomialFeatures)
     poly = PolynomialFeatures(degree=2, include_bias=False)
     X_poly = poly.fit_transform(X)
     
-    # Padronização dos dados
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_poly)
     
-    # Divisão dos dados em treino e teste (80/20)
     X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
     
     print(f"Features utilizadas (antes de polinomios): {features}")
     print("\nTreinando Regressão Linear Regularizada (Ridge) com Polinômios...")
     
-    # Passo 3: Ridge Regression
     model = Ridge(alpha=10.0) 
     
     start_time = time.time()
@@ -73,11 +66,9 @@ def main():
     
     print(f"Treinamento finalizado em {(end_time - start_time):.4f} segundos.")
     
-    # Previsões
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
     
-    # Métricas
     mae_train = mean_absolute_error(y_train, y_pred_train)
     rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
     r2_train = r2_score(y_train, y_pred_train)

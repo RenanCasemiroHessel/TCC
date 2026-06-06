@@ -8,7 +8,6 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 base = r".\data\www.acmeai.tech Dataset - BMGF-LivestockWeight-CV\Pixel"
 
-# Cor do bovino por lote (conforme visualizar.py)
 COR_BOVINO = {
     "B2": np.array([0, 255, 0, 255]),       # verde
     "B3": np.array([255, 30, 249, 255]),    # rosa
@@ -19,9 +18,6 @@ def extrair_metadados(filename, lote, pasta_caminho):
     nome = filename.replace("___fuse.png", "").replace(".jpg", "")
     partes = nome.split("_")
     try:
-        # B2: Ex: 1.0_s_117_10.0_F -> partes: ['1.0', 's', '117', '10.0', 'F']
-        # B3: Ex: 100_s_109_M -> partes: ['100', 's', '109', 'M']
-        # B4: Ex: 100_b4-1_s_124_F -> partes: ['100', 'b4-1', 's', '124', 'F']
         
         if lote == "B2":
             id_animal = f"B2_{partes[0]}"
@@ -41,7 +37,6 @@ def extrair_metadados(filename, lote, pasta_caminho):
         else:
             return None
             
-        # Normalização do Sexo (M = Macho, F = Fêmea)
         sexo = sexo.upper().strip()
         if "M" in sexo:
             sexo = "M"
@@ -50,14 +45,12 @@ def extrair_metadados(filename, lote, pasta_caminho):
         else:
             sexo = "N/A"
             
-        # Normalização da Vista (Side/Lateral vs Back/Rear)
         vista = vista.lower().strip()
         if vista == "s":
             vista = "side"
         elif vista in ["r", "b"]:
             vista = "back"
         else:
-            # Fallback para o nome do caminho da pasta
             pasta_lower = pasta_caminho.lower()
             if "side" in pasta_lower:
                 vista = "side"
@@ -80,7 +73,6 @@ def extrair_metadados(filename, lote, pasta_caminho):
 def extrair_features(mask_path, cor_bovino):
     mask = np.array(Image.open(mask_path))
 
-    # Garante canal alpha (RGBA)
     if mask.shape[-1] == 3:
         alpha = np.full((*mask.shape[:2], 1), 255, dtype=np.uint8)
         mask = np.concatenate([mask, alpha], axis=-1)
@@ -105,7 +97,6 @@ def extrair_features(mask_path, cor_bovino):
         "area_norm":    round(area / (mask.shape[0] * mask.shape[1]), 6)
     }
 
-# Define quais pastas processar por lote
 fontes = [
     ("B2", os.path.join(base, "B2", "Side",   "annotations")),
     ("B2", os.path.join(base, "B2", "Side_2", "annotations")),
@@ -138,7 +129,6 @@ for lote, pasta in fontes:
             ignorados += 1
             continue
 
-        # Une as características geométricas aos metadados (id_animal, sexo, vista, peso)
         features.update(meta)
         features["lote"] = lote
         registros.append(features)

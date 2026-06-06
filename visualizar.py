@@ -45,7 +45,6 @@ def processar_exemplo(lote):
     if not imagens:
         return None, None, None, None, None
 
-    # Tenta até achar uma imagem com máscara e peso válido
     random.shuffle(imagens)
     for img_file in imagens:
         mask_file = img_file + "___fuse.png"
@@ -70,14 +69,12 @@ def processar_exemplo(lote):
         if bovino_mask.sum() == 0:
             continue
 
-        # Overlay: escurece fundo, tinge bovino de verde
         overlay = img.copy()
         overlay[~bovino_mask] = (overlay[~bovino_mask] * 0.3).astype(np.uint8)
         overlay[bovino_mask]  = np.clip(
             overlay[bovino_mask] * 0.6 + np.array([0, 200, 0]) * 0.4, 0, 255
         ).astype(np.uint8)
 
-        # Bounding box
         rows_idx = np.where(np.any(bovino_mask, axis=1))[0]
         cols_idx = np.where(np.any(bovino_mask, axis=0))[0]
         bbox     = (cols_idx[0], rows_idx[0], cols_idx[-1], rows_idx[-1])
@@ -88,7 +85,6 @@ def processar_exemplo(lote):
     return None, None, None, None, None
 
 
-# ── Plot principal: imagem original + segmentada lado a lado ──────────────────
 fig, axes = plt.subplots(3, 2, figsize=(16, 18))
 fig.suptitle("Segmentação de Bovinos — Exemplos por Lote", fontsize=18, fontweight="bold", y=1.01)
 
@@ -104,16 +100,13 @@ for i, lote in enumerate(["B2", "B3", "B4"]):
         ax_seg.axis("off")
         continue
 
-    # --- Imagem original ---
     pasta_imgs = os.path.join(pastas_exemplo[lote], "images")
     imagens    = [f for f in os.listdir(pasta_imgs) if f.endswith(".jpg")]
-    # Acha a imagem correspondente ao overlay processado
     img_orig = overlay.copy()  # fallback; overlay já tem a imagem base
     ax_orig.imshow(img_orig)
     ax_orig.set_title(f"Lote {lote} — Imagem com Segmentação\nPeso real: {peso} kg", fontsize=12)
     ax_orig.axis("off")
 
-    # Bounding box na imagem segmentada
     x0, y0, x1, y1 = bbox
     rect = mpatches.Rectangle(
         (x0, y0), x1 - x0, y1 - y0,
@@ -121,7 +114,6 @@ for i, lote in enumerate(["B2", "B3", "B4"]):
     )
     ax_orig.add_patch(rect)
 
-    # --- Máscara binária isolada ---
     ax_seg.imshow(bovino_mask, cmap="Greens")
     ax_seg.set_title(
         f"Lote {lote} — Máscara do Bovino\n"
@@ -136,7 +128,6 @@ plt.show()
 print("✅ Imagem salva em: segmentacao_exemplo.png")
 
 
-# ── Gráfico extra: distribuição de pesos do CSV ───────────────────────────────
 csv_path = "dataset_features_completo.csv"
 if os.path.exists(csv_path):
     df = pd.read_csv(csv_path)
@@ -144,7 +135,6 @@ if os.path.exists(csv_path):
     fig2, axes2 = plt.subplots(1, 2, figsize=(14, 5))
     fig2.suptitle("Distribuição do Dataset", fontsize=15, fontweight="bold")
 
-    # Histograma de pesos
     axes2[0].hist(df["peso_kg"], bins=30, color="#2ecc71", edgecolor="white")
     axes2[0].set_title("Distribuição de Pesos")
     axes2[0].set_xlabel("Peso (kg)")
@@ -152,7 +142,6 @@ if os.path.exists(csv_path):
     axes2[0].axvline(df["peso_kg"].mean(), color="red", linestyle="--", label=f"Média: {df['peso_kg'].mean():.0f} kg")
     axes2[0].legend()
 
-    # Amostras por lote
     contagem = df["lote"].value_counts()
     axes2[1].bar(contagem.index, contagem.values, color=["#3498db", "#e74c3c", "#f39c12"], edgecolor="white")
     axes2[1].set_title("Amostras por Lote")

@@ -22,9 +22,6 @@ from sklearn.metrics import (
     classification_report
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
 SEED       = 42
 WEIGHT_MIN = 50.0
 WEIGHT_MAX = 1000.0
@@ -34,9 +31,6 @@ np.random.seed(SEED)
 print(f"  XGBoost + GridSearch para Estimativa de Peso Bovino")
 print(f"  Entrada: Features das imagens segmentadas (CSV)")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. CARREGAR CSV DE FEATURES
-# ─────────────────────────────────────────────────────────────────────────────
 CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_features_completo.csv")
 print("Carregando dataset de features ...")
 
@@ -46,7 +40,6 @@ if not os.path.exists(CSV_PATH):
 
 df = pd.read_csv(CSV_PATH)
 
-# Filtro de domínio
 before = len(df)
 df = df[(df["peso_kg"] >= WEIGHT_MIN) & (df["peso_kg"] <= WEIGHT_MAX)].copy()
 df = df.reset_index(drop=True)
@@ -56,9 +49,6 @@ for col in ["sexo_M", "vista_side"]:
     if col in df_enc.columns:
         df_enc[col] = df_enc[col].astype(float)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ENGENHARIA DE FEATURES (BIOLÓGICA E FÍSICA)
-# ─────────────────────────────────────────────────────────────────────────────
 df_enc["bbox_area"] = df_enc["altura_bbox"] * df_enc["largura_bbox"]
 df_enc["fill_ratio"] = df_enc["area"] / (df_enc["bbox_area"] + 1e-8)
 df_enc["volume_approx"] = df_enc["area"] ** 1.5              # Escalonamento alométrico tridimensional (peso ~ volume ~ área ^ 1.5)
@@ -72,17 +62,11 @@ for col in ["sexo_M", "vista_side"]:
 X = df_enc[features].values
 y = df_enc["peso_kg"].values
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. SPLIT 80/20
-# ─────────────────────────────────────────────────────────────────────────────
 print("\nDividindo dados (80% treino / 20% validação) ...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=SEED
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. GRIDSEARCH
-# ─────────────────────────────────────────────────────────────────────────────
 print("\nIniciando GridSearch de hiperparâmetros do XGBoost ...")
 
 param_grid = {
@@ -111,7 +95,6 @@ grid_search.fit(X_train, y_train)
 print(f"\n      Melhores hiperparâmetros: {grid_search.best_params_}")
 best_model = grid_search.best_estimator_
 
-# Re-treinar o melhor modelo com rastreamento de RMSE por época
 best_params = grid_search.best_params_
 final_model = xgb.XGBRegressor(
     **best_params,
@@ -129,9 +112,6 @@ val_rmse   = final_model.evals_result()["validation_1"]["rmse"]
 
 y_pred = final_model.predict(X_test)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 4. MÉTRICAS
-# ─────────────────────────────────────────────────────────────────────────────
 mae  = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2   = r2_score(y_test, y_pred)
@@ -171,15 +151,11 @@ print("  Relatório de Classificação Detalhado:")
 print(classification_report(y_true_cat, y_pred_cat,
                              labels=[0, 1, 2], target_names=class_names, zero_division=0))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5. GRÁFICOS
-# ─────────────────────────────────────────────────────────────────────────────
 print("Gerando gráficos ...\n")
 DPI      = 150
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 errors   = y_pred - y_test
 
-# 5.1 Curva RMSE por nº de árvores
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(train_rmse, color="#8E44AD", linewidth=2, label="RMSE Treino")
 ax.plot(val_rmse,   color="#E74C3C", linewidth=2, linestyle="--", label="RMSE Validação")
@@ -191,7 +167,6 @@ plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_curva_loss.png"), dpi=DPI)
 plt.close()
 print("    [OK] xgboost_tune_curva_loss.png")
 
-# 5.2 Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
 lim = [min(y_test.min(), y_pred.min()) - 10, max(y_test.max(), y_pred.max()) + 10]
 ax.scatter(y_test, y_pred, alpha=0.5, color="#8E44AD", edgecolors="white", linewidths=0.4, s=40)
@@ -206,7 +181,6 @@ plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_grafico_dispersao_r2.png"), dpi
 plt.close()
 print("    [OK] xgboost_tune_grafico_dispersao_r2.png")
 
-# 5.3 Histograma de Erros
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.hist(errors, bins=40, color="#8E44AD", edgecolor="white", alpha=0.85)
 ax.axvline(0, color="red", linestyle="--", linewidth=1.5)
@@ -218,7 +192,6 @@ plt.savefig(os.path.join(SAVE_DIR, "xgboost_tune_histograma_erros.png"), dpi=DPI
 plt.close()
 print("    [OK] xgboost_tune_histograma_erros.png")
 
-# 5.4 Boxplot/Violino de Erros por Faixa
 df_err = pd.DataFrame({
     "Erro":  errors,
     "Faixa": [class_names[c] for c in y_true_cat]

@@ -25,7 +25,6 @@ from torch.optim import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# CONFIG
 SEED          = 42
 IMG_SIZE      = 224
 BATCH_SIZE    = 32
@@ -48,14 +47,11 @@ print(f"  Batch size  : {BATCH_SIZE}")
 print(f"  SAMPLE_FRAC : {SAMPLE_FRAC}")
 print(f"  Peso máx    : <{WEIGHT_MAX:.0f} kg (somente leves)")
 
-# 1. DOWNLOAD E CURADORIA DOS DADOS
 print("Carregando dataset via kagglehub ...")
 import kagglehub
 
-# Obter o caminho da pasta raiz do dataset pelo kagglehub
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 
-# Resolver o caminho completo do Pixel
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
 
 def extrair_peso(filename, caminho):
@@ -83,7 +79,6 @@ for root, dirs, files in os.walk(base_dir):
         partes_caminho = rel_path.split(os.sep)
         lote = partes_caminho[0]
 
-        # Ignorar lote B3 (dados clonados)
         if lote == "B3":
             continue
 
@@ -109,7 +104,6 @@ for root, dirs, files in os.walk(base_dir):
             })
 
 df = pd.DataFrame(records)
-# Remover duplicatas de caminho de imagem
 df = df.drop_duplicates(subset=["image_path"]).reset_index(drop=True)
 
 print(f"      Shape do dataset estruturado: {df.shape}")
@@ -120,13 +114,11 @@ weight_col = "weight"
 
 print(f"\n      Coluna imagem : '{img_col}'")
 
-# Garantir tipos corretos
 df[weight_col] = pd.to_numeric(df[weight_col], errors="coerce")
 df = df.dropna(subset=[img_col, weight_col]).copy()
 
 print(f"\n      Registros após filtro (sem B3, leves <{WEIGHT_MAX:.0f}kg, sem duplicatas): {len(df)}")
 
-# ── Verificação Física das Máscaras ──────────────────────────────────────────
 print("\n[VERIFICAÇÃO DE MÁSCARAS]")
 masks_found = 0
 sample_masks = []
@@ -148,10 +140,8 @@ if len(sample_masks) > 0:
 else:
     print("Aviso: nenhuma máscara encontrada na amostra.")
 
-# 2. SPLIT 80/20
 print("\nDividindo dados (80% treino / 20% validação) ...")
 
-# SAMPLE_FRAC < 1.0 para testes rápidos (ex: SAMPLE_FRAC=0.1 usa 10% do dataset)
 if SAMPLE_FRAC < 1.0:
     df = df.sample(frac=SAMPLE_FRAC, random_state=SEED).reset_index(drop=True)
 
@@ -159,7 +149,6 @@ train_df, val_df = train_test_split(df, test_size=0.2, random_state=SEED)
 train_df = train_df.reset_index(drop=True)
 val_df   = val_df.reset_index(drop=True)
 
-# 3. DATASET E DATALOADERS
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
@@ -194,17 +183,12 @@ class CattleWeightDataset(Dataset):
         weight   = float(self.df.loc[idx, self.weight_col])
         
         try:
-            # 1. Carregar Imagem Original
             image_pil = Image.open(img_path).convert("RGB")
             img_np = np.array(image_pil)
             
-            # 2. Localizar Máscara
             dirname, filename = os.path.split(img_path)
             parent_dir, last_dir = os.path.split(dirname)
             
-            # Lógica de cor padrão por lote
-            # Lote B2: Verde [0, 255, 0, 255]
-            # Lotes B3 e B4: Rosa/Magenta [255, 30, 249, 255]
             if "B2" in img_path:
                 cor_alvo = np.array([0, 255, 0, 255])
             else:
@@ -220,23 +204,19 @@ class CattleWeightDataset(Dataset):
                 mask_pil = Image.open(mask_path)
                 mask_np = np.array(mask_pil)
                 
-                # Ajustar canais da máscara caso não tenha canal Alpha
                 if mask_np.shape[-1] == 3:
                     alpha = np.full((*mask_np.shape[:2], 1), 255, dtype=np.uint8)
                     mask_np = np.concatenate([mask_np, alpha], axis=-1)
                 
                 bovino_mask = np.all(mask_np == cor_alvo, axis=-1)
                 
-                # Aplicar fundo preto (isolar boi)
                 masked_img = img_np.copy()
                 masked_img[~bovino_mask] = 0
                 image_pil = Image.fromarray(masked_img)
             else:
-                # Fallback para usar a imagem original
                 image_pil = Image.fromarray(img_np)
                 
         except Exception:
-            # Fallback em caso de erro na leitura/processamento
             image_pil = Image.fromarray(np.zeros((IMG_SIZE, IMG_SIZE, 3), dtype=np.uint8))
             
         if self.transform:
@@ -252,11 +232,8 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
 val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False,
                           num_workers=4, pin_memory=torch.cuda.is_available())
 
-# 4. MODELO — ResNet18 com cabeça de regressão
 print("\nConstruindo modelo (ResNet18 pré-treinado) ...")
 
-# ── Normalização do alvo (crítico para convergência da regressão) ─────────────
-# Normaliza pesos para [0,1] durante treino e escala de volta nas métricas
 train_weights = train_df[weight_col].values
 Y_MIN = float(train_weights.min())
 Y_MAX = float(train_weights.max())
@@ -264,7 +241,6 @@ Y_MAX = float(train_weights.max())
 model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 in_features = model.fc.in_features
 
-# Cabeça de regressão com sigmoid para garantir saída em [0,1]
 model.fc = nn.Sequential(
     nn.Linear(in_features, 256),
     nn.ReLU(),
@@ -273,7 +249,6 @@ model.fc = nn.Sequential(
     nn.Sigmoid(),
 )
 
-# Fase 1: Congelar backbone, treinar só a cabeça (primeiras épocas)
 for name, param in model.named_parameters():
     if "fc" not in name:
         param.requires_grad = False
@@ -289,7 +264,6 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 )
 FINETUNE_EPOCH = 3   # descongelar mais cedo para mais épocas de fine-tuning
 
-# 5. LOOP DE TREINO
 print(f"\nIniciando treino por {NUM_EPOCHS} épocas ...")
 print(f"      Estratégia: Épocas 1-{FINETUNE_EPOCH-1} → só cabeça | Épocas {FINETUNE_EPOCH}+ → backbone descongelado\n")
 
@@ -304,19 +278,16 @@ best_epoch    = 0
 for epoch in range(1, NUM_EPOCHS + 1):
     t0 = time.time()
 
-    # ── Fase 2: Descongelar backbone a partir de FINETUNE_EPOCH ──
     if epoch == FINETUNE_EPOCH:
         for param in model.parameters():
             param.requires_grad = True
         optimizer = Adam(model.parameters(), lr=LEARNING_RATE * 0.1)  # LR menor para fine-tune
         print(f"  [Época {epoch}] Backbone DESCONGELADO — fine-tuning completo com LR={LEARNING_RATE * 0.1:.6f}\n")
 
-    # ── Treino (alvos normalizados para [0,1]) ──
     model.train()
     running_loss = 0.0
     for imgs, weights in train_loader:
         imgs    = imgs.to(DEVICE)
-        # Normaliza peso para [0, 1]
         w_norm  = ((weights - Y_MIN) / (Y_MAX - Y_MIN)).to(DEVICE).unsqueeze(1)
         optimizer.zero_grad()
         preds   = model(imgs)          # saída em [0,1] por causa do Sigmoid
@@ -326,7 +297,6 @@ for epoch in range(1, NUM_EPOCHS + 1):
         running_loss += loss.item() * imgs.size(0)
     train_loss = running_loss / len(train_dataset)
 
-    # ── Validação ──
     model.eval()
     val_running = 0.0
     with torch.no_grad():
@@ -342,7 +312,6 @@ for epoch in range(1, NUM_EPOCHS + 1):
     history["train_loss"].append(train_loss)
     history["val_loss"].append(val_loss)
 
-    # Salva o melhor modelo (menor val loss)
     marker = ""
     if val_loss < best_val_loss:
         best_val_loss = val_loss
@@ -361,7 +330,6 @@ for epoch in range(1, NUM_EPOCHS + 1):
 
 print(f"\n  Melhor modelo: época {best_epoch} | Val Loss: {best_val_loss:.6f}")
 
-# 6. MÉTRICAS DE AVALIAÇÃO
 print("\nCalculando métricas no conjunto de validação ...")
 
 checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
@@ -374,7 +342,6 @@ with torch.no_grad():
     for imgs, weights in val_loader:
         imgs  = imgs.to(DEVICE)
         preds = model(imgs).squeeze(1).cpu().numpy()
-        # Desnormalizar: voltar para kg reais
         preds_kg = preds * (Y_MAX - Y_MIN) + Y_MIN
         all_preds.extend(preds_kg.tolist())
         all_true.extend(weights.numpy().tolist())
@@ -383,14 +350,12 @@ y_true = np.array(all_true)
 y_pred = np.array(all_preds)
 errors = y_pred - y_true
 
-# ── Métricas de Regressão ────────────────────────────────────────────────────
 mae  = mean_absolute_error(y_true, y_pred)
 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
 r2   = r2_score(y_true, y_pred)
 
 pearson_r = np.corrcoef(y_true, y_pred)[0, 1]
 
-# ── Relatório Final ──────────────────────────────────────────────────────────
 print(f"""
 {'='*60}
   RELATÓRIO FINAL — CNN Baseline (ResNet18)
@@ -403,11 +368,9 @@ print(f"""
     print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# 7. GERAÇÃO DOS GRÁFICOS
 print("  Gerando gráficos ...\n")
 DPI = 150
 
-# ─── 7.1 Curva de Loss ───────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(9, 5))
 epochs_range = range(1, NUM_EPOCHS + 1)
 ax.plot(epochs_range, history["train_loss"], "o-", color="#2563EB", linewidth=2.5,
@@ -426,7 +389,6 @@ fig.savefig(path_loss, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_curva_loss.png")
 
-# ─── 7.2 Scatter Real × Predito ──────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(8, 8))
 ax.scatter(y_true, y_pred, alpha=0.45, s=18, color="#7C3AED", edgecolors="none", label="Amostras")
 lims = [min(y_true.min(), y_pred.min()) - 20, max(y_true.max(), y_pred.max()) + 20]
@@ -443,7 +405,6 @@ fig.savefig(path_scatter, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_grafico_dispersao_r2.png")
 
-# ─── 7.3 Histograma de Erros / Resíduos ──────────────────────────────────────
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.hist(errors, bins=50, color="#059669", edgecolor="white", linewidth=0.5, alpha=0.85)
 ax.axvline(0, color="black", linewidth=1.8, linestyle="--", label="Erro = 0")
@@ -460,7 +421,6 @@ fig.savefig(path_hist, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_histograma_erros.png")
 
-# ─── 7.4 Boxplot de Erros ────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(errors, vert=True, patch_artist=True,
            boxprops=dict(facecolor="#7C3AED", alpha=0.6),
@@ -479,7 +439,6 @@ fig.savefig(path_box, dpi=DPI)
 plt.close(fig)
 print(f"  [OK] cnn_boxplot_erros.png")
 
-# ─── 7.5 Gráfico de Correlação Linear ────────────────────────────────────────
 pearson_r = np.corrcoef(y_true, y_pred)[0, 1]
 fig, ax = plt.subplots(figsize=(8, 7))
 ax.scatter(y_true, y_pred, alpha=0.4, s=18, color="#7C3AED", edgecolors="none", label="Amostras")

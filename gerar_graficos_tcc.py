@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch
 
-# ─── FONTES GLOBAIS ───────────────────────────────────────────────────────────
 plt.rcParams.update({
     "font.size":          15,
     "axes.titlesize":     17,
@@ -41,7 +40,6 @@ print("\n" + "=" * 60)
 print("  Gerando gráficos do TCC com fontes maiores")
 print("=" * 60)
 
-# 1. GRÁFICO DE AMOSTRAS POR LOTE  →  grafico-amostras-lote.png
 print("\n[1] grafico-amostras-lote.png")
 df = pd.read_csv(CSV_PATH)
 
@@ -102,7 +100,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "grafico-amostras-lote.png"),
 plt.close()
 print("    [OK] salvo")
 
-# 2. DISTRIBUIÇÃO DE PESOS  →  grafico-distribuicao-pesos.png
 print("[2] grafico-distribuicao-pesos.png")
 
 cores_lote = {"B2": "#4C72B0", "B4": "#DD8452"}
@@ -134,7 +131,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "grafico-distribuicao-pesos.png"),
 plt.close()
 print("    [OK] salvo")
 
-# 3. BOXPLOT COMPARATIVO ERROS ABSOLUTOS  →  comparacao_boxplot_erros_absolutos.png
 print("[3] comparacao_boxplot_erros_absolutos.png")
 
 import json as _json
@@ -184,7 +180,6 @@ for patch, cor in zip(bp["boxes"], cores_box):
     patch.set_facecolor(cor)
     patch.set_alpha(0.80)
 
-# MAE como diamante
 for i, (label, mae) in enumerate(maes_dict.items(), start=1):
     ax.plot(i, mae, "D", color="black", markersize=9, zorder=5,
             label="MAE" if i == 1 else "")
@@ -194,7 +189,6 @@ for i, (label, mae) in enumerate(maes_dict.items(), start=1):
 ax.axhline(20, color="crimson", linestyle="--", linewidth=1.8,
            label="Referência: 20 kg")
 
-# Legenda de grupos
 patch_sv  = mpatches.Patch(color="#4C72B0", alpha=0.8, label="Single-View")
 patch_mv  = mpatches.Patch(color="#DD8452", alpha=0.8, label="Multi-View")
 patch_cnn = mpatches.Patch(color="#55A868", alpha=0.8, label="CNN")
@@ -216,7 +210,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "comparacao_boxplot_erros_absolutos.png")
 plt.close()
 print("    [OK] salvo")
 
-# 4. CNN MULTI-VIEW — DISPERSÃO R²  →  cnn_multiview_dispersao_r2.png
 print("[4] cnn_multiview_dispersao_r2.png")
 
 cnn_npy = np.load(os.path.join(SAVE_DIR, "predictions_cnn_multiview.npy"))
@@ -246,7 +239,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "cnn_multiview_dispersao_r2.png"),
 plt.close()
 print("    [OK] salvo")
 
-# 5. CNN MULTI-VIEW — CURVA DE LOSS  →  cnn_multiview_curva_loss.png
 print("[5] cnn_multiview_curva_loss.png")
 
 cnn_res    = resultados.get("CNN Multi-View", {})
@@ -283,11 +275,8 @@ if train_hist:
 else:
     print("    [!] Histórico de loss não encontrado no JSON — pulando")
 
-# 6. XGBOOST MV — FEATURE IMPORTANCE  →  xgboost_multiview_feature_importance.png
-# (valores medidos no modelo treinado, conforme exibido no texto do TCC)
 print("[6] xgboost_multiview_feature_importance.png")
 
-# Valores extraídos do modelo treinado (ver Figura 11 do TCC)
 features_imp = {
     "volume_approx":      0.021,
     "volume_norm_approx": 0.028,
@@ -321,7 +310,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "xgboost_multiview_feature_importance.png
 plt.close()
 print("    [OK] salvo")
 
-# 7. PIPELINE TCC  →  pipeline-tcc.png
 print("[7] pipeline-tcc.png")
 
 fig, ax = plt.subplots(figsize=(13, 5))
@@ -348,7 +336,6 @@ def seta(ax, x1, y1, x2, y2):
                                 lw=1.8, mutation_scale=18),
                 zorder=2)
 
-# Linha 1 — topo (y=3.8): entrada e segmentação
 Y1 = 3.8
 caixa(ax, 1.4,  Y1, "Imagem\nBruta",          "#2C3E50")
 caixa(ax, 3.9,  Y1, "YOLO11n-seg\nSegmentação","#8E44AD")
@@ -359,10 +346,8 @@ seta(ax, 2.51, Y1, 2.79, Y1)
 seta(ax, 5.01, Y1, 5.29, Y1)
 seta(ax, 7.51, Y1, 7.79, Y1)
 
-# Seta descendo de Features para modelos
 seta(ax, 8.9, Y1 - 0.425, 8.9, 2.3)
 
-# Linha 2 — base (y=1.5): modelos
 Y2 = 1.5
 xs_mod = [1.4, 3.6, 5.9, 8.2, 10.8]
 labels_mod = [
@@ -377,17 +362,13 @@ cores_mod = ["#E67E22", "#E67E22", "#E67E22", "#C0392B", "#27AE60"]
 for xi, label, cor in zip(xs_mod, labels_mod, cores_mod):
     caixa(ax, xi, Y2, label, cor)
 
-# Seta de Features desce e vira para esquerda até primeiro modelo
 seta(ax, 8.9, 2.3, 8.2, 1.925)
 
-# Setas horizontais entre modelos (da direita para esquerda — todos recebem features)
 for i in range(len(xs_mod) - 2, 0, -1):
     seta(ax, xs_mod[i] - 1.1, Y2, xs_mod[i] - 1.38, Y2)
 
-# Seta do último modelo para Peso
 seta(ax, 9.31, Y2, 9.59, Y2)
 
-# Legenda leve
 ax.text(6.5, 0.35, "Single-View e Multi-View: Regressão Linear, XGBoost, MLP, CNN ResNet18",
         ha="center", va="center", fontsize=11, color="#555555", style="italic")
 
@@ -397,7 +378,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "pipeline-tcc.png"),
 plt.close()
 print("    [OK] salvo")
 
-# 8. ANÁLISE DE OVERFITTING  →  analise_overfitting.png
 print("[8] analise_overfitting.png")
 
 modelos_hist = {

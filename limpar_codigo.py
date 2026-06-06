@@ -30,29 +30,22 @@ for fname in FILES:
     for line in lines:
         stripped = line.strip()
 
-        # Remove headers decorativos com =====
         if re.search(r'print\(.*["\']={8,}', line):
             continue
         if re.search(r'print\(f.*\*\s*60', line) and "=" in line:
             continue
 
-        # Remove prints de step [N/N] mas mantém a mensagem
         line = re.sub(r'\[(\d+)/(\d+)\]\s+', '', line)
 
-        # Remove prints de sub-detalhe com muitos espaços no início da string
-        # ex: print(f"      Registros carregados: ...")
         if re.search(r'print\(f?["\'][ ]{5,}', line):
             if not any(kw in line for kw in PALAVRAS_KEEP):
                 continue
 
-        # Remove comentários que explicam o óbvio
-        # ex: # Carregar CSV, # Calcular métricas, # Plotar gráfico
         if re.match(r'^\s*#\s*(Carregar|Calcular|Plotar|Gerar|Salvar|Criar|Definir|Configurar|Mostrar|Exibir|Verificar)\b', line, re.IGNORECASE):
             continue
 
         new_lines.append(line)
 
-    # Remove linhas em branco duplicadas
     final = []
     prev_blank = False
     for line in new_lines:

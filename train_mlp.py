@@ -24,7 +24,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# CONFIG
 SEED       = 42
 IMG_SIZE   = 64           # 64x64 pixels (como MNIST 28x28, mas maior)
 WEIGHT_MAX = 250.0        # Dataset filtrado: só leves
@@ -36,7 +35,6 @@ print(f"  Entrada  : Imagens segmentadas {IMG_SIZE}x{IMG_SIZE} (achatadas)")
 print(f"  Modelo   : MLPRegressor (sklearn)")
 print(f"  Dataset  : apenas leves (<{WEIGHT_MAX:.0f}kg), sem B3")
 
-# 1. CARREGAR DATASET (via kagglehub, filtrado: sem B3, só leves)
 print("Carregando dataset via kagglehub ...")
 dataset_path = kagglehub.dataset_download("sadhliroomyprime/cattle-weight-detection-model-dataset-12k")
 base_dir = os.path.join(dataset_path, "www.acmeai.tech Dataset - BMGF-LivestockWeight-CV", "Pixel")
@@ -66,11 +64,9 @@ for root, dirs, files in os.walk(base_dir):
         partes_caminho = rel_path.split(os.sep)
         lote = partes_caminho[0]
 
-        # Ignorar lote B3 (dados clonados)
         if lote == "B3":
             continue
 
-        # B2 usa máscara verde; B4 usa magenta
         cor_alvo = np.array([0, 255, 0, 255]) if "B2" in lote else np.array([255, 30, 249, 255])
 
         for img_file in sorted(os.listdir(pasta_imgs)):
@@ -96,10 +92,8 @@ for root, dirs, files in os.walk(base_dir):
 
 df = pd.DataFrame(records)
 
-# Remover duplicatas (mesma imagem com mesmo peso)
 df = df.drop_duplicates(subset=["image_path"]).reset_index(drop=True)
 
-# 2. EXTRAIR PIXELS DAS IMAGENS SEGMENTADAS (com cache por nome de filtro)
 print("\nExtraindo pixels das imagens segmentadas...")
 SAVE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRAFICOS_DIR = os.path.join(SAVE_DIR, "graficos")
@@ -145,7 +139,6 @@ else:
     np.save(CACHE_Y, y)
     print("      [CACHE] Pixels salvos para execuções instantâneas futuras!")
 
-# 3. SPLIT 80/20 & PCA
 print("\nDividindo dados (80% treino / 20% validação) ...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=SEED
@@ -160,7 +153,6 @@ pca = PCA(n_components=128, random_state=SEED)
 X_train = pca.fit_transform(X_train)
 X_test  = pca.transform(X_test)
 
-# 4. TREINO DO MLP
 print("\nTreinando MLP ...")
 
 mlp = MLPRegressor(
@@ -176,16 +168,13 @@ mlp = MLPRegressor(
 mlp.fit(X_train, y_train)
 
 y_pred = mlp.predict(X_test)
-# Clipar predições ao range do dataset (MLP não tem restrição de saída)
 WEIGHT_MIN = 50.0
 y_pred = np.clip(y_pred, WEIGHT_MIN, WEIGHT_MAX)
 
-# 5. MÉTRICAS
 mae  = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2   = r2_score(y_test, y_pred)
 
-# Correlação de Pearson entre real e previsto
 pearson_r = np.corrcoef(y_test, y_pred)[0, 1]
 
 print(f"""
@@ -200,12 +189,10 @@ print(f"""
     print(f"Pearson r  : {pearson_r:>8.4f}")
 """)
 
-# 6. GRÁFICOS
 print("Gerando gráficos ...\n")
 DPI    = 150
 errors = y_pred - y_test
 
-# 6.1 Curva de Loss
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(mlp.loss_curve_, color="#4A90D9", linewidth=2, label="Loss Treino")
 if hasattr(mlp, "validation_scores_") and mlp.validation_scores_:
@@ -221,7 +208,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_curva_loss.png"), dpi=DPI)
 plt.close()
 print("    [OK] mlp_curva_loss.png")
 
-# 6.2 Dispersão R²
 fig, ax = plt.subplots(figsize=(8, 8))
 lim = [min(y_test.min(), y_pred.min()) - 10, max(y_test.max(), y_pred.max()) + 10]
 ax.scatter(y_test, y_pred, alpha=0.5, color="#4A90D9", edgecolors="white", linewidths=0.4, s=40)
@@ -235,7 +221,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_grafico_dispersao_r2.png"), dpi=DPI)
 plt.close()
 print("    [OK] mlp_grafico_dispersao_r2.png")
 
-# 6.3 Histograma de Erros
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.hist(errors, bins=40, color="#4A90D9", edgecolor="white", alpha=0.85)
 ax.axvline(0, color="red", linestyle="--", linewidth=1.5)
@@ -247,7 +232,6 @@ plt.savefig(os.path.join(GRAFICOS_DIR, "mlp_histograma_erros.png"), dpi=DPI)
 plt.close()
 print("    [OK] mlp_histograma_erros.png")
 
-# 6.4 Gráfico de Correlação Linear
 fig, ax = plt.subplots(figsize=(8, 7))
 ax.scatter(y_test, y_pred, alpha=0.5, color="#4A90D9", edgecolors="white", linewidths=0.3, s=40, label="Amostras")
 coef_corr = np.polyfit(y_test, y_pred, 1)

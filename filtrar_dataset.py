@@ -27,20 +27,16 @@ print(f"  Total original            : {len(df)}")
 print(f"  Lotes originais           : {df['lote'].value_counts().to_dict()}")
 print(f"  Distribuição de peso      : min={df['peso_kg'].min():.0f}kg, max={df['peso_kg'].max():.0f}kg")
 
-# 1. Remover lote B3 (dados clonados/duplicados)
 df = df[df["lote"] != "B3"].copy()
 print(f"\n  Após remover B3           : {len(df)}")
 
-# 2. Apenas bovinos leves (< 250 kg) para evitar viés com dados insuficientes
 df = df[df["peso_kg"] < 250].copy()
 print(f"  Após filtrar leves (<250kg): {len(df)}")
 
-# 3. Remover linhas duplicadas
 before_dedup = len(df)
 df = df.drop_duplicates().reset_index(drop=True)
 print(f"  Após remover duplicatas   : {len(df)} (removidas: {before_dedup - len(df)})")
 
-# Relatório final
 print(f"\n  Distribuição final:")
 print(f"    Lotes  : {df['lote'].value_counts().to_dict()}")
 print(f"    Vista  : {df['vista'].value_counts().to_dict()}")
