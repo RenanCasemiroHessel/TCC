@@ -22,6 +22,7 @@ __pycache__/
 # IDEs & Editores
 .vscode/
 .idea/
+.claude/
 *.suo
 *.ntvs*
 *.njsproj
@@ -38,11 +39,26 @@ access_token
 kaggle.json
 .kaggle/
 
+# Histórico de conversas exportado (contém token do Kaggle em texto puro)
+historico_conversas/
+
 # Scripts pessoais/experimentais
 upload_to_kaggle.py
 teste.py
 improve_linear_regression.py
 treinar_cnn_output.log
 
-# PNGs soltos na raiz (duplicados de graficos/)
-cnn_*.png
+# Recortes gerados por pipeline/preparar_cache_singleview.py
+dados/cache_singleview_*/
+
+# Frontend (Vite + React + TS)
+app/frontend/node_modules/
+app/frontend/.vite/
+app/static/dist/
+
+# Fora do repositório público: documentos internos e texto do TCC
+*.md
+!/README.md
+/texto/
+/arquivo/historico_conversas/
+/arquivo/reorganizacao_2026-11-05.csv

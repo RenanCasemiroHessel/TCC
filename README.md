@@ -81,6 +81,28 @@ O dataset (~4 GB) é baixado automaticamente na primeira execução de qualquer 
 
 ---
 
+## Demo Web (`app.py`)
+
+Interface web para testar o pipeline com uma foto nova: upload → segmentação YOLO → estimativa de peso pela CNN. Backend em Flask (`app.py`), frontend em **Vite + React + TypeScript** (`frontend/`), buildado como estático e servido pelo próprio Flask — um único processo, sem servidor Node em produção.
+
+```bash
+# 1. Build do frontend (gera static/dist/)
+cd frontend
+npm install
+npm run build
+cd ..
+
+# 2. Rodar o servidor (modelos .pth e yolo11n-seg.pt precisam existir na raiz)
+python app.py
+# ou: .venv/bin/python app.py
+```
+
+Acesse `http://localhost:5000`.
+
+Para desenvolver o frontend com hot-reload, rode `npm run dev` dentro de `frontend/` (porta 5173) com o Flask rodando em paralelo na 5000 — o `vite.config.ts` já tem proxy de `/predict` para o backend.
+
+---
+
 ## Descrição dos Scripts
 
 ### Pré-processamento

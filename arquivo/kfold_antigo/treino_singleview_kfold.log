@@ -1,0 +1,150 @@
+  CNN Single-View K-Fold — TCC2 (faixa estendida)
+  Device      : cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+  Épocas/fold : 30
+  K-Folds     : 5
+  Batch size  : 32
+
+  B3 incorporado: +2585 imagens (só lateral)
+  Dataset total: 7471 imagens (2443 pares B2/B4 + B3 avulso) | faixa 36-621kg
+  Pesados (>=250kg): 191 imagens (2.6%)
+
+  ── Fold 1/5 ── treino=5958 imgs (26264 efetivas/época) | val=1513 imgs
+    Época 01/30 | Train: 0.003443 | Val: 0.002008 | 2380.0s  * melhor
+    Época 02/30 | Train: 0.002957 | Val: 0.001953 | 2393.2s  * melhor
+    Época 03/30 | Train: 0.002279 | Val: 0.001544 | 2398.4s  * melhor
+    Época 04/30 | Train: 0.001777 | Val: 0.001485 | 2392.8s  * melhor
+    Época 05/30 | Train: 0.001528 | Val: 0.001449 | 2392.4s  * melhor
+    Época 06/30 | Train: 0.001368 | Val: 0.001432 | 2390.9s  * melhor
+    Época 07/30 | Train: 0.001214 | Val: 0.001429 | 2389.5s  * melhor
+    Época 08/30 | Train: 0.001127 | Val: 0.001421 | 2393.2s  * melhor
+    Época 09/30 | Train: 0.001041 | Val: 0.001445 | 2384.5s
+    Época 10/30 | Train: 0.000979 | Val: 0.001413 | 2387.6s  * melhor
+    Época 11/30 | Train: 0.000921 | Val: 0.001436 | 2393.5s
+    Época 12/30 | Train: 0.000869 | Val: 0.001456 | 2393.1s
+    Época 13/30 | Train: 0.000827 | Val: 0.001434 | 2391.5s
+    Época 14/30 | Train: 0.000790 | Val: 0.001428 | 2388.6s
+    Época 15/30 | Train: 0.000758 | Val: 0.001521 | 2392.5s
+    Época 16/30 | Train: 0.000715 | Val: 0.001460 | 2389.0s
+    Época 17/30 | Train: 0.000681 | Val: 0.001526 | 2383.0s
+    Época 18/30 | Train: 0.000673 | Val: 0.001564 | 2389.4s
+    Época 19/30 | Train: 0.000652 | Val: 0.001430 | 2389.1s
+    Época 20/30 | Train: 0.000635 | Val: 0.001571 | 2390.9s
+    Época 21/30 | Train: 0.000619 | Val: 0.001679 | 2386.9s
+    Época 22/30 | Train: 0.000601 | Val: 0.001438 | 2380.5s
+    Época 23/30 | Train: 0.000577 | Val: 0.001583 | 2380.6s
+    Época 24/30 | Train: 0.000572 | Val: 0.001406 | 2392.1s  * melhor
+    Época 25/30 | Train: 0.000565 | Val: 0.001534 | 2415.1s
+    Época 26/30 | Train: 0.000539 | Val: 0.001477 | 2383.6s
+    Época 27/30 | Train: 0.000541 | Val: 0.001489 | 2388.2s
+    Época 28/30 | Train: 0.000530 | Val: 0.001442 | 2378.8s
+    Época 29/30 | Train: 0.000522 | Val: 0.001528 | 2388.9s
+    Época 30/30 | Train: 0.000510 | Val: 0.001571 | 2418.4s
+
+  ── Fold 2/5 ── treino=5967 imgs (26316 efetivas/época) | val=1504 imgs
+    Época 01/30 | Train: 0.003433 | Val: 0.001884 | 2407.7s  * melhor
+    Época 02/30 | Train: 0.002977 | Val: 0.001855 | 2380.4s  * melhor
+    Época 03/30 | Train: 0.002280 | Val: 0.001547 | 2392.5s  * melhor
+    Época 04/30 | Train: 0.001754 | Val: 0.001454 | 2401.3s  * melhor
+    Época 05/30 | Train: 0.001541 | Val: 0.001398 | 2397.8s  * melhor
+    Época 06/30 | Train: 0.001344 | Val: 0.001428 | 2399.8s
+    Época 07/30 | Train: 0.001219 | Val: 0.001417 | 2388.8s
+    Época 08/30 | Train: 0.001135 | Val: 0.001400 | 2396.7s
+    Época 09/30 | Train: 0.001058 | Val: 0.001456 | 2395.7s
+    Época 10/30 | Train: 0.000977 | Val: 0.001413 | 2399.6s
+    Época 11/30 | Train: 0.000919 | Val: 0.001432 | 2396.0s
+    Época 12/30 | Train: 0.000863 | Val: 0.001436 | 2397.9s
+    Época 13/30 | Train: 0.000818 | Val: 0.001491 | 2395.9s
+    Época 14/30 | Train: 0.000774 | Val: 0.001430 | 2404.5s
+    Época 15/30 | Train: 0.000752 | Val: 0.001426 | 2398.9s
+    Época 16/30 | Train: 0.000710 | Val: 0.001512 | 2396.0s
+    Época 17/30 | Train: 0.000704 | Val: 0.001535 | 2397.9s
+    Época 18/30 | Train: 0.000666 | Val: 0.001512 | 2398.1s
+    Época 19/30 | Train: 0.000633 | Val: 0.001396 | 2404.4s  * melhor
+    Época 20/30 | Train: 0.000619 | Val: 0.001395 | 2392.7s  * melhor
+    Época 21/30 | Train: 0.000607 | Val: 0.001391 | 2410.5s  * melhor
+    Época 22/30 | Train: 0.000606 | Val: 0.001420 | 2411.6s
+    Época 23/30 | Train: 0.000579 | Val: 0.001351 | 2416.2s  * melhor
+    Época 24/30 | Train: 0.000575 | Val: 0.001396 | 2408.7s
+    Época 25/30 | Train: 0.000557 | Val: 0.001415 | 2413.8s
+    Época 26/30 | Train: 0.000547 | Val: 0.001433 | 2413.2s
+    Época 27/30 | Train: 0.000541 | Val: 0.001451 | 2417.1s
+    Época 28/30 | Train: 0.000520 | Val: 0.001421 | 2408.3s
+    Época 29/30 | Train: 0.000535 | Val: 0.001451 | 2406.0s
+    Época 30/30 | Train: 0.000516 | Val: 0.001606 | 2414.1s
+
+  ── Fold 3/5 ── treino=5988 imgs (26464 efetivas/época) | val=1483 imgs
+    Época 01/30 | Train: 0.003508 | Val: 0.001945 | 2412.3s  * melhor
+    Época 02/30 | Train: 0.002985 | Val: 0.001841 | 2442.1s  * melhor
+    Época 03/30 | Train: 0.002304 | Val: 0.001475 | 2442.8s  * melhor
+    Época 04/30 | Train: 0.001775 | Val: 0.001382 | 2420.5s  * melhor
+    Época 05/30 | Train: 0.001549 | Val: 0.001316 | 2420.3s  * melhor
+    Época 06/30 | Train: 0.001346 | Val: 0.001412 | 2413.4s
+    Época 07/30 | Train: 0.001236 | Val: 0.001307 | 2428.0s  * melhor
+    Época 08/30 | Train: 0.001123 | Val: 0.001328 | 2413.8s
+    Época 09/30 | Train: 0.001046 | Val: 0.001328 | 2413.8s
+    Época 10/30 | Train: 0.000972 | Val: 0.001338 | 2413.9s
+    Época 11/30 | Train: 0.000914 | Val: 0.001331 | 2412.9s
+    Época 12/30 | Train: 0.000848 | Val: 0.001380 | 2413.7s
+    Época 13/30 | Train: 0.000806 | Val: 0.001363 | 2410.6s
+    Época 14/30 | Train: 0.000770 | Val: 0.001321 | 2396.3s
+    Época 15/30 | Train: 0.000737 | Val: 0.001415 | 2406.7s
+    Época 16/30 | Train: 0.000700 | Val: 0.001382 | 2418.3s
+    Época 17/30 | Train: 0.000685 | Val: 0.001440 | 2410.2s
+    Época 18/30 | Train: 0.000659 | Val: 0.001405 | 2407.4s
+    Época 19/30 | Train: 0.000635 | Val: 0.001493 | 2426.7s
+    Época 20/30 | Train: 0.000622 | Val: 0.001377 | 2445.3s
+    Época 21/30 | Train: 0.000603 | Val: 0.001427 | 2443.2s
+    Época 22/30 | Train: 0.000579 | Val: 0.001325 | 2437.3s
+    Época 23/30 | Train: 0.000569 | Val: 0.001334 | 2456.4s
+    Época 24/30 | Train: 0.000561 | Val: 0.001449 | 2440.2s
+    Época 25/30 | Train: 0.000543 | Val: 0.001383 | 2438.7s
+    Época 26/30 | Train: 0.000532 | Val: 0.001393 | 2439.6s
+    Época 27/30 | Train: 0.000529 | Val: 0.001338 | 2421.8s
+    Época 28/30 | Train: 0.000519 | Val: 0.001377 | 2423.8s
+    Época 29/30 | Train: 0.000510 | Val: 0.001330 | 2432.6s
+    Época 30/30 | Train: 0.000504 | Val: 0.001335 | 2426.7s
+
+  ── Fold 4/5 ── treino=5967 imgs (26252 efetivas/época) | val=1504 imgs
+    Época 01/30 | Train: 0.003516 | Val: 0.002098 | 2410.2s  * melhor
+    Época 02/30 | Train: 0.003062 | Val: 0.002390 | 2389.3s
+    Época 03/30 | Train: 0.002364 | Val: 0.001606 | 2409.1s  * melhor
+    Época 04/30 | Train: 0.001782 | Val: 0.001545 | 2415.1s  * melhor
+    Época 05/30 | Train: 0.001526 | Val: 0.001545 | 2417.5s
+    Época 06/30 | Train: 0.001363 | Val: 0.001561 | 2414.8s
+    Época 07/30 | Train: 0.001234 | Val: 0.001576 | 2404.7s
+    Época 08/30 | Train: 0.001135 | Val: 0.001513 | 2399.1s  * melhor
+    Época 09/30 | Train: 0.001042 | Val: 0.001571 | 2411.6s
+    Época 10/30 | Train: 0.000995 | Val: 0.001588 | 2413.8s
+    Época 11/30 | Train: 0.000910 | Val: 0.001555 | 2403.5s
+    Época 12/30 | Train: 0.000856 | Val: 0.001549 | 2414.4s
+    Época 13/30 | Train: 0.000823 | Val: 0.001623 | 2443.9s
+    Época 14/30 | Train: 0.000765 | Val: 0.001589 | 2406.0s
+    Época 15/30 | Train: 0.000740 | Val: 0.001700 | 2412.0s
+    Época 16/30 | Train: 0.000705 | Val: 0.001643 | 2399.5s
+    Época 17/30 | Train: 0.000696 | Val: 0.001575 | 2397.3s
+    Época 18/30 | Train: 0.000643 | Val: 0.001565 | 2412.7s
+    Época 19/30 | Train: 0.000636 | Val: 0.001526 | 2410.8s
+    Época 20/30 | Train: 0.000611 | Val: 0.001569 | 2401.2s
+    Época 21/30 | Train: 0.000603 | Val: 0.001562 | 2400.8s
+    Época 22/30 | Train: 0.000586 | Val: 0.001602 | 2415.3s
+    Época 23/30 | Train: 0.000581 | Val: 0.001673 | 2399.7s
+    Época 24/30 | Train: 0.000562 | Val: 0.001558 | 2421.2s
+    Época 25/30 | Train: 0.000552 | Val: 0.001579 | 2412.6s
+    Época 26/30 | Train: 0.000544 | Val: 0.001564 | 2413.7s
+    Época 27/30 | Train: 0.000538 | Val: 0.001565 | 2407.6s
+    Época 28/30 | Train: 0.000511 | Val: 0.001536 | 2414.4s
+    Época 29/30 | Train: 0.000515 | Val: 0.001550 | 2411.2s
+    Época 30/30 | Train: 0.000489 | Val: 0.001551 | 2404.2s
+
+  ── Fold 5/5 ── treino=6004 imgs (26464 efetivas/época) | val=1467 imgs
+    Época 01/30 | Train: 0.005374 | Val: 0.003465 | 2426.9s  * melhor
+Traceback (most recent call last):
+  File "/home/gustavo/Imagens/Tccgados/TCC/treinar_cnn_singleview_kfold.py", line 296, in <module>
+    result = train_one_fold(fold_idx, train_df, val_df)
+  File "/home/gustavo/Imagens/Tccgados/TCC/treinar_cnn_singleview_kfold.py", line 229, in train_one_fold
+    imgs = imgs.to(DEVICE)
+RuntimeError: CUDA error: unspecified launch failure
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

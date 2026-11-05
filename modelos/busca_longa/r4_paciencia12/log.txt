@@ -1,0 +1,112 @@
+  CNN Single-View v2 — 3 folds, até 40 épocas, device cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+  config: {"modo_sticker": "todos", "backbone": "efficientnet_v2_s", "img_size": 384, "batch": 16, "cabeca": 256, "dropout": 0.4, "lr_cabeca": 0.0003, "lr_backbone": 3e-05, "wd": 0.0001, "perda": "smoothl1", "aug": "leve", "mixup": 0.0, "ema": 0.0, "epocas": 40, "paciencia": 12, "pesado_limiar": 230.0, "pesado_repeticoes": 1, "folds": 3, "holdout": 0.15, "avaliar_holdout": false}
+  desenvolvimento: 6348 imgs (4270 animais) | teste final: 1117 imgs (753 animais) | cache 448px
+  escalares: ['log_area_norm', 'log_altura_rel', 'log_largura_rel', 'sexo_M', 'log_sticker_ratio', 'tem_sticker']
+
+  ── Fold 1 ── do zero | treino=3807 val_interna=408 teste=2133 imgs
+    Época 01/40 | loss 0.3309 | val MAE  26.80kg | lr 3.0e-04 | 18s  * melhor
+    Época 02/40 | loss 0.2893 | val MAE  26.61kg | lr 3.0e-04 | 17s  * melhor
+    Época 03/40 | loss 0.3059 | val MAE  26.37kg | lr 3.0e-04 | 51s  * melhor
+    Época 04/40 | loss 0.2707 | val MAE  25.25kg | lr 3.0e-04 | 51s  * melhor
+    Época 05/40 | loss 0.2459 | val MAE  24.15kg | lr 2.9e-04 | 51s  * melhor
+    Época 06/40 | loss 0.2328 | val MAE  24.83kg | lr 2.9e-04 | 51s
+    Época 07/40 | loss 0.2255 | val MAE  24.03kg | lr 2.8e-04 | 51s  * melhor
+    Época 08/40 | loss 0.2117 | val MAE  24.14kg | lr 2.8e-04 | 51s
+    Época 09/40 | loss 0.1959 | val MAE  24.17kg | lr 2.7e-04 | 51s
+    Época 10/40 | loss 0.1858 | val MAE  23.89kg | lr 2.6e-04 | 51s  * melhor
+    Época 11/40 | loss 0.1762 | val MAE  24.17kg | lr 2.5e-04 | 51s
+    Época 12/40 | loss 0.1614 | val MAE  24.20kg | lr 2.5e-04 | 51s
+    Época 13/40 | loss 0.1518 | val MAE  25.02kg | lr 2.4e-04 | 51s
+    Época 14/40 | loss 0.1413 | val MAE  24.66kg | lr 2.3e-04 | 51s
+    Época 15/40 | loss 0.1336 | val MAE  24.97kg | lr 2.2e-04 | 51s
+    Época 16/40 | loss 0.1252 | val MAE  24.74kg | lr 2.0e-04 | 51s
+    Época 17/40 | loss 0.1170 | val MAE  25.06kg | lr 1.9e-04 | 51s
+    Época 18/40 | loss 0.1086 | val MAE  25.01kg | lr 1.8e-04 | 51s
+    Época 19/40 | loss 0.1049 | val MAE  25.36kg | lr 1.7e-04 | 51s
+    Época 20/40 | loss 0.0944 | val MAE  25.63kg | lr 1.6e-04 | 51s
+    Época 21/40 | loss 0.0929 | val MAE  25.45kg | lr 1.5e-04 | 51s
+    Época 22/40 | loss 0.0885 | val MAE  25.08kg | lr 1.3e-04 | 51s
+    early stopping: 12 épocas sem melhorar
+
+  ── Fold 2 ── do zero | treino=3815 val_interna=424 teste=2109 imgs
+    Época 01/40 | loss 0.3392 | val MAE  24.27kg | lr 3.0e-04 | 17s  * melhor
+    Época 02/40 | loss 0.2951 | val MAE  23.47kg | lr 3.0e-04 | 17s  * melhor
+    Época 03/40 | loss 0.3088 | val MAE  23.89kg | lr 3.0e-04 | 51s
+    Época 04/40 | loss 0.2706 | val MAE  23.97kg | lr 3.0e-04 | 51s
+    Época 05/40 | loss 0.2517 | val MAE  22.23kg | lr 2.9e-04 | 51s  * melhor
+    Época 06/40 | loss 0.2356 | val MAE  22.41kg | lr 2.9e-04 | 51s
+    Época 07/40 | loss 0.2176 | val MAE  22.39kg | lr 2.8e-04 | 51s
+    Época 08/40 | loss 0.2053 | val MAE  22.10kg | lr 2.8e-04 | 51s  * melhor
+    Época 09/40 | loss 0.1930 | val MAE  22.32kg | lr 2.7e-04 | 52s
+    Época 10/40 | loss 0.1826 | val MAE  22.39kg | lr 2.6e-04 | 51s
+    Época 11/40 | loss 0.1680 | val MAE  22.51kg | lr 2.5e-04 | 51s
+    Época 12/40 | loss 0.1596 | val MAE  23.30kg | lr 2.5e-04 | 51s
+    Época 13/40 | loss 0.1504 | val MAE  22.74kg | lr 2.4e-04 | 51s
+    Época 14/40 | loss 0.1388 | val MAE  22.71kg | lr 2.3e-04 | 51s
+    Época 15/40 | loss 0.1284 | val MAE  23.02kg | lr 2.2e-04 | 51s
+    Época 16/40 | loss 0.1235 | val MAE  23.03kg | lr 2.0e-04 | 51s
+    Época 17/40 | loss 0.1128 | val MAE  22.71kg | lr 1.9e-04 | 51s
+    Época 18/40 | loss 0.1082 | val MAE  22.39kg | lr 1.8e-04 | 51s
+    Época 19/40 | loss 0.1039 | val MAE  22.30kg | lr 1.7e-04 | 51s
+    Época 20/40 | loss 0.0939 | val MAE  22.81kg | lr 1.6e-04 | 51s
+    early stopping: 12 épocas sem melhorar
+
+  ── Fold 3 ── do zero | treino=3823 val_interna=419 teste=2106 imgs
+    Época 01/40 | loss 0.3409 | val MAE  25.52kg | lr 3.0e-04 | 17s  * melhor
+    Época 02/40 | loss 0.2992 | val MAE  24.93kg | lr 3.0e-04 | 17s  * melhor
+    Época 03/40 | loss 0.3166 | val MAE  24.25kg | lr 3.0e-04 | 51s  * melhor
+    Época 04/40 | loss 0.2738 | val MAE  23.92kg | lr 3.0e-04 | 51s  * melhor
+    Época 05/40 | loss 0.2554 | val MAE  22.75kg | lr 2.9e-04 | 51s  * melhor
+    Época 06/40 | loss 0.2419 | val MAE  22.12kg | lr 2.9e-04 | 51s  * melhor
+    Época 07/40 | loss 0.2237 | val MAE  22.24kg | lr 2.8e-04 | 51s
+    Época 08/40 | loss 0.2115 | val MAE  21.85kg | lr 2.8e-04 | 51s  * melhor
+    Época 09/40 | loss 0.1982 | val MAE  23.35kg | lr 2.7e-04 | 51s
+    Época 10/40 | loss 0.1875 | val MAE  22.55kg | lr 2.6e-04 | 51s
+    Época 11/40 | loss 0.1768 | val MAE  22.68kg | lr 2.5e-04 | 51s
+    Época 12/40 | loss 0.1666 | val MAE  22.75kg | lr 2.5e-04 | 51s
+    Época 13/40 | loss 0.1548 | val MAE  22.42kg | lr 2.4e-04 | 51s
+    Época 14/40 | loss 0.1464 | val MAE  21.69kg | lr 2.3e-04 | 51s  * melhor
+    Época 15/40 | loss 0.1384 | val MAE  21.78kg | lr 2.2e-04 | 51s
+    Época 16/40 | loss 0.1300 | val MAE  22.17kg | lr 2.0e-04 | 51s
+    Época 17/40 | loss 0.1203 | val MAE  22.22kg | lr 1.9e-04 | 51s
+    Época 18/40 | loss 0.1150 | val MAE  22.26kg | lr 1.8e-04 | 51s
+    Época 19/40 | loss 0.1063 | val MAE  22.04kg | lr 1.7e-04 | 51s
+    Época 20/40 | loss 0.1034 | val MAE  21.72kg | lr 1.6e-04 | 51s
+    Época 21/40 | loss 0.0969 | val MAE  22.49kg | lr 1.5e-04 | 51s
+    Época 22/40 | loss 0.0869 | val MAE  21.95kg | lr 1.3e-04 | 51s
+    Época 23/40 | loss 0.0858 | val MAE  22.10kg | lr 1.2e-04 | 51s
+    Época 24/40 | loss 0.0814 | val MAE  21.87kg | lr 1.1e-04 | 51s
+    Época 25/40 | loss 0.0792 | val MAE  21.71kg | lr 9.9e-05 | 51s
+    Época 26/40 | loss 0.0753 | val MAE  22.34kg | lr 8.8e-05 | 51s
+    early stopping: 12 épocas sem melhorar
+
+============================================================
+  RESULTADO — out-of-fold no desenvolvimento (3 folds)
+============================================================
+    Fold 1: MAE  22.94kg | R² 0.475 | ±10% 46.1% | melhor época 10
+    Fold 2: MAE  22.34kg | R² 0.474 | ±10% 46.2% | melhor época 8
+    Fold 3: MAE  22.65kg | R² 0.461 | ±10% 45.0% | melhor época 14
+
+  MAE       : 22.64 kg  (IC95% bootstrap 22.20-23.09)
+  RMSE      : 29.67 kg
+  R²        : 0.4705
+  Pearson r : 0.6960
+  MAPE      : 14.5 %
+  Acc ±10%  : 45.8 %
+  80% das predições erram até ±36.1kg (±22.3%)
+  Viés nos 10% mais leves: +24.9kg | mais pesados: -44.7kg
+  Faixa predita 67-312kg vs real 36-420kg
+
+  Classificação por faixa (cortes 130/190 kg)
+    faixa (kg)  precisão  recall     F1      n
+          <130     0.655   0.568  0.608   1312
+       130-190     0.647   0.806  0.718   3480
+         >=190     0.644   0.362  0.464   1556
+    F1 macro 0.597 | F1 ponderado 0.633 | acurácia balanceada 0.579
+    Matriz de confusão (linha = real, coluna = predito, ordem <130 / 130-190 / >=190):
+          <130    745    556     11
+       130-190    374   2805    301
+         >=190     18    974    564
+  Detecção de pesados (>= 230 kg): precisão 0.635 | recall 0.217 | F1 0.324 (304 pesados reais, 104 apontados pelo modelo)
+
+  Modelos, gráficos e resultados em: /home/gustavo/Imagens/Tccgados/TCC/busca_longa/r4_paciencia12

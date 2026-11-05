@@ -1,0 +1,7 @@
+key,imagem,mascara,lote,vista,sexo,peso_real_kg
+B3_310_453.0,imagens/310_s_453_F.jpg,mascaras/310_s_453_F.jpg___fuse.png,B3,side,F,453.0
+B3_358_465.0,imagens/358_s_465_F.jpg,mascaras/358_s_465_F.jpg___fuse.png,B3,side,F,465.0
+B2_204.0_481.0,imagens/204.0_r_481_2.6_M.jpg,mascaras/204.0_r_481_2.6_M.jpg___fuse.png,B2,rear,M,481.0
+B2_204.0_481.0,imagens/204.0_s_481_2.6_M.jpg,mascaras/204.0_s_481_2.6_M.jpg___fuse.png,B2,side,M,481.0
+B3_364_481.0,imagens/364_s_481_M.jpg,mascaras/364_s_481_M.jpg___fuse.png,B3,side,M,481.0
+B3_400_621.0,imagens/400_s_621_F.jpg,mascaras/400_s_621_F.jpg___fuse.png,B3,side,F,621.0

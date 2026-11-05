@@ -1,0 +1,37 @@
+
+============================================================
+  DESENVOLVIMENTO (out-of-fold, 5 folds)
+============================================================
+  CNN sozinha : MAE 22.50 | ±10% 45.1% | R² 0.478
+  Empilhado   : MAE 22.51 | ±10% 45.1% | R² 0.475
+
+============================================================
+  TESTE FINAL — 1117 imagens nunca usadas
+============================================================
+  CNN (ensemble) : MAE 21.54 | ±10% 48.3% | R² 0.542
+  Empilhado      : MAE 21.49 | ±10% 48.0% | R² 0.549
+
+  Detalhe do empilhado no teste final:
+  MAE       : 21.49 kg  (IC95% bootstrap 20.40-22.62)
+  RMSE      : 28.63 kg
+  R²        : 0.5485
+  Pearson r : 0.7509
+  MAPE      : 14.1 %
+  Acc ±10%  : 48.0 %
+  80% das predições erram até ±34.3kg (±20.8%)
+  Viés nos 10% mais leves: +31.3kg | mais pesados: -50.4kg
+  Faixa predita 93-326kg vs real 50-378kg
+
+  Classificação por faixa (cortes 130/190 kg)
+    faixa (kg)  precisão  recall     F1      n
+          <130     0.779   0.496  0.606    228
+       130-190     0.658   0.901  0.760    616
+         >=190     0.758   0.355  0.484    273
+    F1 macro 0.617 | F1 ponderado 0.661 | acurácia balanceada 0.584
+    Matriz de confusão (linha = real, coluna = predito, ordem <130 / 130-190 / >=190):
+          <130    113    114      1
+       130-190     31    555     30
+         >=190      1    175     97
+  Detecção de pesados (>= 230 kg): precisão 1.000 | recall 0.206 | F1 0.342 (63 pesados reais, 13 apontados pelo modelo)
+
+  Salvo: empilhador.pkl e resultados_empilhamento.json em /home/gustavo/Imagens/Tccgados/TCC/modelos_final_singleview

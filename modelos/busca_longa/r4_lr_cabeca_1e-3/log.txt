@@ -1,0 +1,103 @@
+  CNN Single-View v2 — 3 folds, até 30 épocas, device cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+  config: {"modo_sticker": "todos", "backbone": "efficientnet_v2_s", "img_size": 384, "batch": 16, "cabeca": 256, "dropout": 0.4, "lr_cabeca": 0.001, "lr_backbone": 3e-05, "wd": 0.0001, "perda": "smoothl1", "aug": "leve", "mixup": 0.0, "ema": 0.0, "epocas": 30, "paciencia": 8, "pesado_limiar": 230.0, "pesado_repeticoes": 1, "folds": 3, "holdout": 0.15, "avaliar_holdout": false}
+  desenvolvimento: 6348 imgs (4270 animais) | teste final: 1117 imgs (753 animais) | cache 448px
+  escalares: ['log_area_norm', 'log_altura_rel', 'log_largura_rel', 'sexo_M', 'log_sticker_ratio', 'tem_sticker']
+
+  ── Fold 1 ── do zero | treino=3807 val_interna=408 teste=2133 imgs
+    Época 01/30 | loss 0.3275 | val MAE  26.94kg | lr 1.0e-03 | 18s  * melhor
+    Época 02/30 | loss 0.2891 | val MAE  26.84kg | lr 1.0e-03 | 17s  * melhor
+    Época 03/30 | loss 0.3178 | val MAE  26.71kg | lr 9.9e-04 | 51s  * melhor
+    Época 04/30 | loss 0.2764 | val MAE  25.66kg | lr 9.7e-04 | 51s  * melhor
+    Época 05/30 | loss 0.2526 | val MAE  24.35kg | lr 9.5e-04 | 51s  * melhor
+    Época 06/30 | loss 0.2443 | val MAE  24.52kg | lr 9.3e-04 | 51s
+    Época 07/30 | loss 0.2349 | val MAE  24.20kg | lr 9.0e-04 | 51s  * melhor
+    Época 08/30 | loss 0.2178 | val MAE  24.40kg | lr 8.6e-04 | 51s
+    Época 09/30 | loss 0.2047 | val MAE  23.86kg | lr 8.3e-04 | 51s  * melhor
+    Época 10/30 | loss 0.1955 | val MAE  24.34kg | lr 7.8e-04 | 51s
+    Época 11/30 | loss 0.1900 | val MAE  24.02kg | lr 7.4e-04 | 51s
+    Época 12/30 | loss 0.1727 | val MAE  24.11kg | lr 6.9e-04 | 51s
+    Época 13/30 | loss 0.1637 | val MAE  25.32kg | lr 6.4e-04 | 51s
+    Época 14/30 | loss 0.1542 | val MAE  24.66kg | lr 5.9e-04 | 51s
+    Época 15/30 | loss 0.1453 | val MAE  24.33kg | lr 5.3e-04 | 51s
+    Época 16/30 | loss 0.1396 | val MAE  24.62kg | lr 4.8e-04 | 51s
+    Época 17/30 | loss 0.1274 | val MAE  24.78kg | lr 4.2e-04 | 51s
+    early stopping: 8 épocas sem melhorar
+
+  ── Fold 2 ── do zero | treino=3815 val_interna=424 teste=2109 imgs
+    Época 01/30 | loss 0.3350 | val MAE  23.86kg | lr 1.0e-03 | 17s  * melhor
+    Época 02/30 | loss 0.2907 | val MAE  23.72kg | lr 1.0e-03 | 17s  * melhor
+    Época 03/30 | loss 0.3213 | val MAE  24.19kg | lr 9.9e-04 | 51s
+    Época 04/30 | loss 0.2726 | val MAE  22.26kg | lr 9.7e-04 | 51s  * melhor
+    Época 05/30 | loss 0.2492 | val MAE  25.30kg | lr 9.5e-04 | 51s
+    Época 06/30 | loss 0.2379 | val MAE  21.97kg | lr 9.3e-04 | 51s  * melhor
+    Época 07/30 | loss 0.2219 | val MAE  21.83kg | lr 9.0e-04 | 51s  * melhor
+    Época 08/30 | loss 0.2129 | val MAE  21.14kg | lr 8.6e-04 | 51s  * melhor
+    Época 09/30 | loss 0.1977 | val MAE  22.18kg | lr 8.3e-04 | 51s
+    Época 10/30 | loss 0.1896 | val MAE  22.24kg | lr 7.8e-04 | 51s
+    Época 11/30 | loss 0.1755 | val MAE  21.56kg | lr 7.4e-04 | 51s
+    Época 12/30 | loss 0.1616 | val MAE  21.88kg | lr 6.9e-04 | 51s
+    Época 13/30 | loss 0.1519 | val MAE  21.76kg | lr 6.4e-04 | 51s
+    Época 14/30 | loss 0.1454 | val MAE  22.40kg | lr 5.9e-04 | 51s
+    Época 15/30 | loss 0.1368 | val MAE  22.77kg | lr 5.3e-04 | 51s
+    Época 16/30 | loss 0.1298 | val MAE  22.52kg | lr 4.8e-04 | 51s
+    early stopping: 8 épocas sem melhorar
+
+  ── Fold 3 ── do zero | treino=3823 val_interna=419 teste=2106 imgs
+    Época 01/30 | loss 0.3417 | val MAE  24.87kg | lr 1.0e-03 | 18s  * melhor
+    Época 02/30 | loss 0.2990 | val MAE  25.26kg | lr 1.0e-03 | 17s
+    Época 03/30 | loss 0.3197 | val MAE  24.42kg | lr 9.9e-04 | 51s  * melhor
+    Época 04/30 | loss 0.2743 | val MAE  23.63kg | lr 9.7e-04 | 51s  * melhor
+    Época 05/30 | loss 0.2564 | val MAE  23.47kg | lr 9.5e-04 | 51s  * melhor
+    Época 06/30 | loss 0.2381 | val MAE  23.06kg | lr 9.3e-04 | 51s  * melhor
+    Época 07/30 | loss 0.2240 | val MAE  22.76kg | lr 9.0e-04 | 51s  * melhor
+    Época 08/30 | loss 0.2157 | val MAE  23.00kg | lr 8.6e-04 | 51s
+    Época 09/30 | loss 0.1980 | val MAE  22.38kg | lr 8.3e-04 | 51s  * melhor
+    Época 10/30 | loss 0.1912 | val MAE  23.08kg | lr 7.8e-04 | 51s
+    Época 11/30 | loss 0.1798 | val MAE  22.55kg | lr 7.4e-04 | 51s
+    Época 12/30 | loss 0.1703 | val MAE  22.34kg | lr 6.9e-04 | 51s  * melhor
+    Época 13/30 | loss 0.1598 | val MAE  22.47kg | lr 6.4e-04 | 51s
+    Época 14/30 | loss 0.1470 | val MAE  22.16kg | lr 5.9e-04 | 51s  * melhor
+    Época 15/30 | loss 0.1386 | val MAE  22.00kg | lr 5.3e-04 | 51s  * melhor
+    Época 16/30 | loss 0.1335 | val MAE  21.83kg | lr 4.8e-04 | 51s  * melhor
+    Época 17/30 | loss 0.1213 | val MAE  22.51kg | lr 4.2e-04 | 51s
+    Época 18/30 | loss 0.1189 | val MAE  21.72kg | lr 3.7e-04 | 51s  * melhor
+    Época 19/30 | loss 0.1128 | val MAE  22.06kg | lr 3.2e-04 | 51s
+    Época 20/30 | loss 0.1083 | val MAE  22.38kg | lr 2.7e-04 | 51s
+    Época 21/30 | loss 0.1059 | val MAE  21.88kg | lr 2.3e-04 | 51s
+    Época 22/30 | loss 0.1016 | val MAE  21.94kg | lr 1.8e-04 | 51s
+    Época 23/30 | loss 0.0956 | val MAE  22.01kg | lr 1.5e-04 | 51s
+    Época 24/30 | loss 0.0916 | val MAE  21.80kg | lr 1.1e-04 | 51s
+    Época 25/30 | loss 0.0918 | val MAE  21.88kg | lr 8.1e-05 | 51s
+    Época 26/30 | loss 0.0897 | val MAE  21.93kg | lr 5.6e-05 | 51s
+    early stopping: 8 épocas sem melhorar
+
+============================================================
+  RESULTADO — out-of-fold no desenvolvimento (3 folds)
+============================================================
+    Fold 1: MAE  22.59kg | R² 0.487 | ±10% 44.9% | melhor época 9
+    Fold 2: MAE  22.20kg | R² 0.477 | ±10% 45.8% | melhor época 8
+    Fold 3: MAE  22.64kg | R² 0.463 | ±10% 44.9% | melhor época 18
+
+  MAE       : 22.47 kg  (IC95% bootstrap 22.01-22.94)
+  RMSE      : 29.52 kg
+  R²        : 0.4758
+  Pearson r : 0.6962
+  MAPE      : 14.4 %
+  Acc ±10%  : 45.2 %
+  80% das predições erram até ±35.5kg (±21.9%)
+  Viés nos 10% mais leves: +26.4kg | mais pesados: -45.8kg
+  Faixa predita 78-313kg vs real 36-420kg
+
+  Classificação por faixa (cortes 130/190 kg)
+    faixa (kg)  precisão  recall     F1      n
+          <130     0.657   0.552  0.600   1312
+       130-190     0.641   0.811  0.716   3480
+         >=190     0.639   0.345  0.448   1556
+    F1 macro 0.588 | F1 ponderado 0.626 | acurácia balanceada 0.569
+    Matriz de confusão (linha = real, coluna = predito, ordem <130 / 130-190 / >=190):
+          <130    724    579      9
+       130-190    362   2823    295
+         >=190     16   1003    537
+  Detecção de pesados (>= 230 kg): precisão 0.670 | recall 0.207 | F1 0.317 (304 pesados reais, 94 apontados pelo modelo)
+
+  Modelos, gráficos e resultados em: /home/gustavo/Imagens/Tccgados/TCC/busca_longa/r4_lr_cabeca_1e-3

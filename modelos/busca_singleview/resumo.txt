@@ -1,0 +1,45 @@
+
+=== Busca iniciada 30/10 23:18 ===
+
+Rodada 1 — backbone (224px)
+  >> r1_resnet18: --backbone resnet18 — início 23:18
+  ok r1_resnet18                  MAE  23.47 | ±10%  43.6% | R² 0.440 | 10 min
+  >> r1_convnext_tiny: --backbone convnext_tiny — início 23:28
+  ok r1_convnext_tiny             MAE  23.46 | ±10%  43.6% | R² 0.446 | 18 min
+  >> r1_resnet50: --backbone resnet50 — início 23:46
+  ok r1_resnet50                  MAE  23.73 | ±10%  42.9% | R² 0.427 | 22 min
+  >> r1_efficientnet_v2_s: --backbone efficientnet_v2_s — início 00:08
+  ok r1_efficientnet_v2_s         MAE  23.37 | ±10%  43.9% | R² 0.443 | 29 min
+  -> melhor backbone: efficientnet_v2_s (MAE 23.37)
+
+Rodada 2 — resolução (efficientnet_v2_s)
+  >> r2_efficientnet_v2_s_320: --backbone efficientnet_v2_s --img-size 320 — início 00:37
+  ok r2_efficientnet_v2_s_320     MAE  23.02 | ±10%  44.8% | R² 0.459 | 44 min
+  >> r2_efficientnet_v2_s_384: --backbone efficientnet_v2_s --img-size 384 — início 01:22
+  ok r2_efficientnet_v2_s_384     MAE  22.95 | ±10%  44.8% | R² 0.461 | 65 min
+  -> melhor resolução: 384px (MAE 22.95)
+
+Rodada 3 — ajustes (efficientnet_v2_s, 224px; referência MAE 23.37)
+  >> r3_pesado3: --backbone efficientnet_v2_s --pesado-repeticoes 3 — início 02:27
+  ok r3_pesado3                   MAE  23.22 | ±10%  44.5% | R² 0.452 | 16 min
+  >> r3_pesado1: --backbone efficientnet_v2_s --pesado-repeticoes 1 — início 02:43
+  ok r3_pesado1                   MAE  22.70 | ±10%  44.9% | R² 0.468 | 16 min
+  >> r3_aug_forte: --backbone efficientnet_v2_s --aug forte — início 02:58
+  ok r3_aug_forte                 MAE  23.27 | ±10%  43.1% | R² 0.452 | 27 min
+  >> r3_ema: --backbone efficientnet_v2_s --ema 0.999 — início 03:26
+  ok r3_ema                       MAE  23.28 | ±10%  43.7% | R² 0.445 | 38 min
+  >> r3_mixup: --backbone efficientnet_v2_s --mixup 0.2 — início 04:04
+  ok r3_mixup                     MAE  23.44 | ±10%  43.5% | R² 0.442 | 26 min
+  >> r3_lr_backbone_1e-4: --backbone efficientnet_v2_s --lr-backbone 0.0001 — início 04:29
+  ok r3_lr_backbone_1e-4          MAE  23.78 | ±10%  42.7% | R² 0.420 | 24 min
+  -> ajustes que melhoraram >= 0.15 kg: ['pesado1']
+
+Final — 5 folds + teste final: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1
+  >> final: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 — início 04:54
+  ok final                        MAE  22.50 | ±10%  45.1% | R² 0.478 | 83 min
+  TESTE FINAL (ensemble): MAE 21.54 kg | ±10% 48.3% | R² 0.542
+
+Empilhamento (CPU)
+  ver /home/gustavo/Imagens/Tccgados/TCC/modelos_final_singleview/empilhamento_log.txt
+
+=== Busca concluída 31/10 06:17 ===

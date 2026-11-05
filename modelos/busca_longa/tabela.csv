@@ -1,0 +1,20 @@
+config,parametros,mae,acc10,r2,mape,minutos
+r4_base,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16,22.673,45.10,0.4669,14.50,45.8
+r4_convnext_tiny,--backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16,21.859,46.42,0.5072,14.25,37.9
+r4_resnet50,--backbone resnet50 --img-size 384 --pesado-repeticoes 1 --batch 16,22.930,43.90,0.4574,14.62,45.0
+r4_efficientnet_v2_m,--backbone efficientnet_v2_m --img-size 384 --pesado-repeticoes 1 --batch 8,22.723,44.61,0.4633,14.50,39.5
+r4_convnext_small,--backbone convnext_small --img-size 384 --pesado-repeticoes 1 --batch 12,22.226,46.52,0.4833,14.27,66.7
+r4_img448,--backbone efficientnet_v2_s --img-size 448 --pesado-repeticoes 1 --batch 12,22.194,46.75,0.4863,14.32,55.3
+r4_cabeca512,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --cabeca 512,22.659,44.96,0.4709,14.53,48.2
+r4_cabeca128,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --cabeca 128,22.745,44.80,0.4675,14.53,43.9
+r4_dropout0.2,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --dropout 0.2,22.557,45.10,0.4762,14.49,45.6
+r4_dropout0.6,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --dropout 0.6,22.729,44.57,0.4680,14.55,45.7
+r4_perda_l1,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --perda l1,22.397,45.94,0.4777,14.33,44.8
+r4_perda_mse,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --perda mse,22.799,44.53,0.4685,14.63,44.0
+r4_lr_cabeca_1e-3,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --lr-cabeca 0.001,22.475,45.21,0.4758,14.38,47.4
+r4_lr_backbone_1e-5,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --lr-backbone 1e-05,22.670,45.13,0.4665,14.51,57.5
+r4_lr_backbone_5e-5,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --lr-backbone 5e-05,22.623,45.12,0.4668,14.53,37.2
+r4_wd_1e-2,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --wd 0.01,22.523,45.65,0.4711,14.35,45.7
+r4_paciencia12,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --paciencia 12 --epocas 40,22.645,45.78,0.4705,14.47,55.0
+r5_combinacao,--backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16 --perda l1 --lr-cabeca 0.001,22.328,45.83,0.4815,14.42,63.5
+final_v2,--backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16,22.190,45.86,0.4933,14.45,74.0

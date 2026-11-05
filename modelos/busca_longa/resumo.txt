@@ -1,0 +1,61 @@
+
+=== Busca longa iniciada 31/10 11:46 ===
+
+Rodada 4 — base (--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16) + mudanças isoladas
+  >> r4_base: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 — início 11:46
+  ok r4_base                      MAE  22.67 | ±10%  45.1% | R² 0.467 | 46 min
+  >> r4_convnext_tiny: --backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16 — início 12:32
+  ok r4_convnext_tiny             MAE  21.86 | ±10%  46.4% | R² 0.507 | 38 min
+  >> r4_resnet50: --backbone resnet50 --img-size 384 --pesado-repeticoes 1 --batch 16 — início 13:10
+  ok r4_resnet50                  MAE  22.93 | ±10%  43.9% | R² 0.457 | 45 min
+  >> r4_efficientnet_v2_m: --backbone efficientnet_v2_m --img-size 384 --pesado-repeticoes 1 --batch 12 — início 13:55
+  !! r4_efficientnet_v2_m FALHOU (código 1) — ver /home/gustavo/Imagens/Tccgados/TCC/busca_longa/r4_efficientnet_v2_m/log.txt
+  >> r4_convnext_small: --backbone convnext_small --img-size 384 --pesado-repeticoes 1 --batch 16 — início 14:14
+
+=== Busca longa iniciada 31/10 14:15 ===
+
+Rodada 4 — base (--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16) + mudanças isoladas
+  [pulado, já existe] r4_base                      MAE  22.67 | ±10%  45.1%
+  [pulado, já existe] r4_convnext_tiny             MAE  21.86 | ±10%  46.4%
+  [pulado, já existe] r4_resnet50                  MAE  22.93 | ±10%  43.9%
+  >> r4_efficientnet_v2_m: --backbone efficientnet_v2_m --img-size 384 --pesado-repeticoes 1 --batch 8 — início 14:15
+  ok r4_efficientnet_v2_m         MAE  22.72 | ±10%  44.6% | R² 0.463 | 39 min
+  >> r4_convnext_small: --backbone convnext_small --img-size 384 --pesado-repeticoes 1 --batch 12 — início 14:54
+  ok r4_convnext_small            MAE  22.23 | ±10%  46.5% | R² 0.483 | 67 min
+  >> r4_img448: --backbone efficientnet_v2_s --img-size 448 --pesado-repeticoes 1 --batch 12 — início 16:01
+  ok r4_img448                    MAE  22.19 | ±10%  46.8% | R² 0.486 | 55 min
+  >> r4_cabeca512: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --cabeca 512 — início 16:56
+  ok r4_cabeca512                 MAE  22.66 | ±10%  45.0% | R² 0.471 | 48 min
+  >> r4_cabeca128: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --cabeca 128 — início 17:45
+  ok r4_cabeca128                 MAE  22.75 | ±10%  44.8% | R² 0.467 | 44 min
+  >> r4_dropout0.2: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --dropout 0.2 — início 18:29
+  ok r4_dropout0.2                MAE  22.56 | ±10%  45.1% | R² 0.476 | 46 min
+  >> r4_dropout0.6: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --dropout 0.6 — início 19:14
+  ok r4_dropout0.6                MAE  22.73 | ±10%  44.6% | R² 0.468 | 46 min
+  >> r4_perda_l1: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --perda l1 — início 20:00
+  ok r4_perda_l1                  MAE  22.40 | ±10%  45.9% | R² 0.478 | 45 min
+  >> r4_perda_mse: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --perda mse — início 20:45
+  ok r4_perda_mse                 MAE  22.80 | ±10%  44.5% | R² 0.469 | 44 min
+  >> r4_lr_cabeca_1e-3: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --lr-cabeca 0.001 — início 21:29
+  ok r4_lr_cabeca_1e-3            MAE  22.47 | ±10%  45.2% | R² 0.476 | 47 min
+  >> r4_lr_backbone_1e-5: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --lr-backbone 1e-05 — início 22:16
+  ok r4_lr_backbone_1e-5          MAE  22.67 | ±10%  45.1% | R² 0.466 | 58 min
+  >> r4_lr_backbone_5e-5: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --lr-backbone 5e-05 — início 23:14
+  ok r4_lr_backbone_5e-5          MAE  22.62 | ±10%  45.1% | R² 0.467 | 37 min
+  >> r4_wd_1e-2: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --wd 0.01 — início 23:51
+  ok r4_wd_1e-2                   MAE  22.52 | ±10%  45.7% | R² 0.471 | 46 min
+  >> r4_paciencia12: --backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1 --batch 16 --paciencia 12 --epocas 40 — início 00:36
+  ok r4_paciencia12               MAE  22.64 | ±10%  45.8% | R² 0.471 | 55 min
+  -> referência 22.67 | melhoraram >= 0.15 kg: ['convnext_tiny (21.86)', 'perda_l1 (22.40)', 'lr_cabeca_1e-3 (22.47)']
+
+Rodada 5 — combinação das mudanças que melhoraram
+  >> r5_combinacao: --backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16 --perda l1 --lr-cabeca 0.001 — início 01:31
+  ok r5_combinacao                MAE  22.33 | ±10%  45.8% | R² 0.482 | 64 min
+  -> combinação não superou a melhor mudança isolada (convnext_tiny); fica ela
+
+Final — 5 folds + teste final: --backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16
+  >> final_v2: --backbone convnext_tiny --img-size 384 --pesado-repeticoes 1 --batch 16 — início 02:35
+  ok final_v2                     MAE  22.19 | ±10%  45.9% | R² 0.493 | 74 min
+  TESTE FINAL (ensemble): MAE 21.72 kg | ±10% 49.2% | R² 0.540
+
+=== Busca longa concluída 01/11 03:49 ===

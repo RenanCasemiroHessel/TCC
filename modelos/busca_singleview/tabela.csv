@@ -1,0 +1,14 @@
+config,parametros,mae,acc10,r2,mape,minutos
+r1_resnet18,--backbone resnet18,23.473,43.56,0.4401,15.18,9.9
+r1_convnext_tiny,--backbone convnext_tiny,23.459,43.64,0.4462,15.41,17.9
+r1_resnet50,--backbone resnet50,23.728,42.93,0.4274,15.23,22.2
+r1_efficientnet_v2_s,--backbone efficientnet_v2_s,23.373,43.92,0.4431,15.09,28.9
+r2_efficientnet_v2_s_320,--backbone efficientnet_v2_s --img-size 320,23.017,44.82,0.4587,15.06,44.3
+r2_efficientnet_v2_s_384,--backbone efficientnet_v2_s --img-size 384,22.945,44.77,0.4611,14.77,65.1
+r3_pesado3,--backbone efficientnet_v2_s --pesado-repeticoes 3,23.218,44.55,0.4515,15.18,16.0
+r3_pesado1,--backbone efficientnet_v2_s --pesado-repeticoes 1,22.704,44.91,0.4677,14.70,15.7
+r3_aug_forte,--backbone efficientnet_v2_s --aug forte,23.271,43.08,0.4516,15.08,27.1
+r3_ema,--backbone efficientnet_v2_s --ema 0.999,23.278,43.73,0.4450,14.88,37.9
+r3_mixup,--backbone efficientnet_v2_s --mixup 0.2,23.444,43.46,0.4418,15.24,25.7
+r3_lr_backbone_1e-4,--backbone efficientnet_v2_s --lr-backbone 0.0001,23.781,42.66,0.4201,15.37,24.3
+final,--backbone efficientnet_v2_s --img-size 384 --pesado-repeticoes 1,22.503,45.09,0.4777,14.53,83.1

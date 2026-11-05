@@ -1,0 +1,87 @@
+  CNN Multi-View K-Fold — TCC2 (faixa estendida)
+  Device      : cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+  Épocas/fold : 15
+  K-Folds     : 3
+  Batch size  : 16
+
+  Dataset: 2443 pares | faixa 61-481kg
+  Pesados (>=250kg): 46 pares (1.9%)
+
+  ── Fold 1/3 ── treino=1628 pares (6776 efetivos/época) | val=815 pares
+    Época 01/15 | Train: 0.005175 | Val: 0.003462 | 630.6s  * melhor
+    Época 02/15 | Train: 0.004362 | Val: 0.002973 | 638.7s  * melhor
+    Época 03/15 | Train: 0.003626 | Val: 0.002481 | 645.1s  * melhor
+    Época 04/15 | Train: 0.002919 | Val: 0.002613 | 635.0s
+    Época 05/15 | Train: 0.002611 | Val: 0.002411 | 638.5s  * melhor
+    Época 06/15 | Train: 0.002386 | Val: 0.002674 | 631.0s
+    Época 07/15 | Train: 0.002143 | Val: 0.002500 | 638.6s
+    Época 08/15 | Train: 0.002035 | Val: 0.002328 | 639.4s  * melhor
+    Época 09/15 | Train: 0.001861 | Val: 0.002358 | 630.5s
+    Época 10/15 | Train: 0.001726 | Val: 0.002454 | 628.9s
+    Época 11/15 | Train: 0.001708 | Val: 0.002299 | 632.3s  * melhor
+    Época 12/15 | Train: 0.001574 | Val: 0.002401 | 637.4s
+    Época 13/15 | Train: 0.001500 | Val: 0.002603 | 636.8s
+    Época 14/15 | Train: 0.001426 | Val: 0.002258 | 638.9s  * melhor
+    Época 15/15 | Train: 0.001381 | Val: 0.003125 | 632.8s
+
+  ── Fold 2/3 ── treino=1629 pares (6764 efetivos/época) | val=814 pares
+    Época 01/15 | Train: 0.005156 | Val: 0.003107 | 631.2s  * melhor
+    Época 02/15 | Train: 0.004461 | Val: 0.002892 | 628.0s  * melhor
+    Época 03/15 | Train: 0.003623 | Val: 0.002832 | 626.4s  * melhor
+    Época 04/15 | Train: 0.002993 | Val: 0.002857 | 632.7s
+    Época 05/15 | Train: 0.002619 | Val: 0.002806 | 629.8s  * melhor
+    Época 06/15 | Train: 0.002391 | Val: 0.002811 | 636.7s
+    Época 07/15 | Train: 0.002250 | Val: 0.002478 | 629.3s  * melhor
+    Época 08/15 | Train: 0.002014 | Val: 0.002787 | 634.3s
+    Época 09/15 | Train: 0.001916 | Val: 0.002784 | 633.9s
+    Época 10/15 | Train: 0.001800 | Val: 0.003427 | 640.0s
+    Época 11/15 | Train: 0.001692 | Val: 0.002717 | 642.0s
+    Época 12/15 | Train: 0.001579 | Val: 0.003101 | 631.6s
+    Época 13/15 | Train: 0.001469 | Val: 0.002993 | 627.1s
+    Época 14/15 | Train: 0.001424 | Val: 0.002542 | 632.3s
+    Época 15/15 | Train: 0.001386 | Val: 0.002599 | 626.8s
+
+  ── Fold 3/3 ── treino=1629 pares (6740 efetivos/época) | val=814 pares
+    Época 01/15 | Train: 0.007865 | Val: 0.005759 | 624.7s  * melhor
+    Época 02/15 | Train: 0.006952 | Val: 0.005137 | 632.6s  * melhor
+    Época 03/15 | Train: 0.005749 | Val: 0.005212 | 633.4s
+    Época 04/15 | Train: 0.004626 | Val: 0.004876 | 632.5s  * melhor
+    Época 05/15 | Train: 0.004136 | Val: 0.005159 | 630.8s
+    Época 06/15 | Train: 0.003666 | Val: 0.004932 | 634.0s
+    Época 07/15 | Train: 0.003493 | Val: 0.004627 | 633.6s  * melhor
+    Época 08/15 | Train: 0.003142 | Val: 0.004901 | 636.3s
+    Época 09/15 | Train: 0.002788 | Val: 0.004679 | 630.6s
+    Época 10/15 | Train: 0.002536 | Val: 0.005079 | 633.9s
+    Época 11/15 | Train: 0.002418 | Val: 0.004750 | 622.7s
+    Época 12/15 | Train: 0.002307 | Val: 0.004666 | 634.8s
+    Época 13/15 | Train: 0.002083 | Val: 0.004690 | 632.2s
+    Época 14/15 | Train: 0.002108 | Val: 0.004391 | 623.7s  * melhor
+    Época 15/15 | Train: 0.001923 | Val: 0.004594 | 631.3s
+
+============================================================
+  RESULTADO K-FOLD (3 folds) — CNN Multi-View, faixa estendida
+============================================================
+
+  Por fold:
+
+    Fold 1: MAE= 22.54kg  RMSE= 28.92kg  R²=0.4326
+    Fold 2: MAE= 23.24kg  RMSE= 30.66kg  R²=0.3145
+    Fold 3: MAE= 23.06kg  RMSE= 31.46kg  R²=0.3487
+
+  Média ± desvio padrão entre folds:
+    MAE  : 22.95 ± 0.30 kg
+    RMSE : 30.35 ± 1.06 kg
+    R²   : 0.3653 ± 0.0496
+
+  Out-of-fold (todo o dataset, cada animal avaliado 1x por modelo que nunca o viu):
+    MAE  : 22.95 kg
+    RMSE : 30.37 kg
+    R²   : 0.3673
+
+  [OK] kfold_curvas_loss.png
+  [OK] kfold_violin_erro_por_faixa.png
+  [OK] kfold_dispersao_oof.png
+
+  Resultados salvos em: /home/gustavo/Imagens/Tccgados/TCC/resultados_kfold.json
+  Modelos por fold em : /home/gustavo/Imagens/Tccgados/TCC/
+  Gráficos em          : /home/gustavo/Imagens/Tccgados/TCC/graficos/
